@@ -87,9 +87,12 @@ private:
   VSimTop *dut_ptr;
 #ifdef ENABLE_FST
   VerilatedFstC *tfp;
+  VerilatedFstC *tfp_stateChange;
 #else
   VerilatedVcdC *tfp;
+  VerilatedVcdC *tfp_stateChange;
 #endif
+  bool stateChange     = false;
   bool force_dump_wave = false;
 #ifdef VM_SAVABLE
   VerilatedSaveMem *snapshot_slot = nullptr;

@@ -29,6 +29,7 @@
 #endif // CONFIG_DIFFTEST_PERFCNT
 
 Difftest **difftest = NULL;
+uint64_t mstatus_p = 0x0000000a00001800; // 处理器的初始mstatus值，试情况而定
 
 int difftest_init() {
 #ifdef CONFIG_DIFFTEST_PERFCNT
@@ -65,18 +66,19 @@ int difftest_state() {
   return -1;
 }
 
-int difftest_nstep(int step, bool enable_diff) {
+int difftest_nstep(int step, bool enable_diff, bool* stateChange) {
   difftest_switch_zone();
   for (int i = 0; i < step; i++) {
     if (enable_diff) {
-      if (difftest_step())
+      if (difftest_step(stateChange))
         return STATE_ABORT;
     } else {
       difftest_set_dut();
     }
     int status = difftest_state();
-    if (status != STATE_RUNNING)
+    if (status != STATE_RUNNING){
       return status;
+    }
   }
   return STATE_RUNNING;
 }
@@ -91,10 +93,10 @@ void difftest_set_dut() {
     difftest[i]->dut = diffstate_buffer[i]->next();
   }
 }
-int difftest_step() {
+int difftest_step(bool* stateChange) {
   difftest_set_dut();
   for (int i = 0; i < NUM_CORES; i++) {
-    int ret = difftest[i]->step();
+    int ret = difftest[i]->step(stateChange);
     if (ret) {
       return ret;
     }
@@ -236,7 +238,7 @@ void Difftest::do_replay() {
 }
 #endif // CONFIG_DIFFTEST_REPLAY
 
-int Difftest::step() {
+int Difftest::step(bool* stateChange) {
   progress = false;
 
 #ifdef CONFIG_DIFFTEST_REPLAY
@@ -392,7 +394,17 @@ int Difftest::step() {
 #endif // FUZZER_LIB
     return 1;
   }
+  
+  if(mstatus_p != dut->csr.mstatus){
+    *stateChange = true;
+    // 这里似乎有个Bug 第一次的状态切换因为顺序问题并不会保存
+    // 现在和Difftest绑定似乎也是不合理的，这样的话在-no-diff的时候不能保存状态切换
+    printf("[SFuzz Find: %d] DUT Mstatus(p->now): %lx -> %lx\n", mstatus_p != dut->csr.mstatus, mstatus_p, dut->csr.mstatus);
+  } else {
+    *stateChange = false;
+  }
 
+  mstatus_p = dut->csr.mstatus;
   return 0;
 }
 

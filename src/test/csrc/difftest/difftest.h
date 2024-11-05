@@ -214,7 +214,7 @@ public:
   uint32_t num_commit = 0; // # of commits if made progress
   bool has_commit = false;
   // Trigger a difftest checking procdure
-  int step();
+  int step(bool* stateChange);
   void update_nemuproxy(int, size_t);
   inline bool get_trap_valid() {
     return dut->trap.hasTrap;
@@ -431,10 +431,10 @@ protected:
 extern Difftest **difftest;
 int difftest_init();
 
-int difftest_nstep(int step, bool enable_diff);
+int difftest_nstep(int step, bool enable_diff, bool* stateChange);
 void difftest_switch_zone();
 void difftest_set_dut();
-int difftest_step();
+int difftest_step(bool* stateChange);
 int difftest_state();
 void difftest_finish();
 

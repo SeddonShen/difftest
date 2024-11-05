@@ -14,6 +14,7 @@
 * See the Mulan PSL v2 for more details.
 ***************************************************************************************/
 
+#include <string>
 #include "emu.h"
 #include "compress.h"
 #include "device.h"
@@ -365,15 +366,20 @@ Emulator::Emulator(int argc, const char *argv[])
     Verilated::traceEverOn(true); // Verilator must compute traced signals
 #ifdef ENABLE_FST
     tfp = new VerilatedFstC;
+    tfp_stateChange = new VerilatedFstC;
 #else
     tfp = new VerilatedVcdC;
+    tfp_stateChange = new VerilatedVcdC;
 #endif
     dut_ptr->trace(tfp, 99); // Trace 99 levels of hierarchy
+    dut_ptr->trace(tfp_stateChange, 99); // Trace 99 levels of hierarchy
     if (args.wave_path != NULL) {
       tfp->open(args.wave_path);
+      tfp_stateChange->open((std::string(args.wave_path) + "_stateChange.vcd").c_str());
     } else {
       time_t now = time(NULL);
       tfp->open(waveform_filename(now)); // Open the dump file
+      tfp_stateChange->open((std::string(waveform_filename(now)) + "_stateChange.vcd").c_str());
     }
   }
 #endif
@@ -487,6 +493,7 @@ Emulator::~Emulator() {
 #if VM_TRACE == 1
   if (args.enable_waveform)
     tfp->close();
+    tfp_stateChange->close();
 #endif
 
 #if VM_COVERAGE == 1
@@ -584,6 +591,7 @@ inline void Emulator::reset_ncycles(size_t cycles) {
 #if VM_TRACE == 1
     if (args.enable_waveform && args.enable_waveform_full && args.log_begin == 0) {
       tfp->dump(2 * i);
+      tfp_stateChange->dump(2 * i);
     }
 #endif
 
@@ -596,6 +604,7 @@ inline void Emulator::reset_ncycles(size_t cycles) {
 #if VM_TRACE == 1
     if (args.enable_waveform && args.enable_waveform_full && args.log_begin == 0) {
       tfp->dump(2 * i + 1);
+      tfp_stateChange->dump(2 * i + 1);
     }
 #endif
 
@@ -628,9 +637,17 @@ inline void Emulator::single_cycle() {
     bool in_range = (args.log_begin <= cycle) && (cycle <= args.log_end);
     if (in_range || force_dump_wave) {
       if (args.enable_waveform_full) {
-        tfp->dump(2 * args.reset_cycles + 2 * cycles);
+        if(stateChange){
+          tfp_stateChange->dump(2 * args.reset_cycles + 2 * cycles);
+        } else {
+          tfp->dump(2 * args.reset_cycles + 2 * cycles);
+        }
       } else {
-        tfp->dump(cycle);
+        if(stateChange){
+          tfp_stateChange->dump(0);
+        }else{
+          tfp->dump(cycle);
+        }
       }
     }
   }
@@ -666,6 +683,7 @@ inline void Emulator::single_cycle() {
     bool in_range = (args.log_begin <= cycle) && (cycle <= args.log_end);
     if (in_range || force_dump_wave) {
       tfp->dump(2 * args.reset_cycles + 1 + 2 * cycles);
+      tfp_stateChange->dump(2 * args.reset_cycles + 1 + 2 * cycles);
     }
   }
 #endif
@@ -825,7 +843,7 @@ int Emulator::tick() {
     difftest_trace_write(step);
   }
 
-  trapCode = difftest_nstep(step, args.enable_diff);
+  trapCode = difftest_nstep(step, args.enable_diff, &stateChange);
 
   if (trapCode != STATE_RUNNING) {
 #ifdef FUZZER_LIB
