@@ -115,6 +115,7 @@ private:
   inline void single_cycle();
   void trigger_stat_dump();
   void display_trapinfo();
+  inline char *csr_wave_filename();
   inline char *timestamp_filename(time_t t, char *buf);
   inline char *logdb_filename(time_t t);
   inline char *snapshot_filename(time_t t);

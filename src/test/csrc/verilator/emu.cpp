@@ -379,7 +379,7 @@ Emulator::Emulator(int argc, const char *argv[])
     } else {
       time_t now = time(NULL);
       tfp->open(waveform_filename(now)); // Open the dump file
-      tfp_stateChange->open((std::string(waveform_filename(now)) + "_stateChange.vcd").c_str());
+      tfp_stateChange->open(csr_wave_filename());
     }
   }
 #endif
@@ -591,7 +591,6 @@ inline void Emulator::reset_ncycles(size_t cycles) {
 #if VM_TRACE == 1
     if (args.enable_waveform && args.enable_waveform_full && args.log_begin == 0) {
       tfp->dump(2 * i);
-      tfp_stateChange->dump(2 * i);
     }
 #endif
 
@@ -604,7 +603,6 @@ inline void Emulator::reset_ncycles(size_t cycles) {
 #if VM_TRACE == 1
     if (args.enable_waveform && args.enable_waveform_full && args.log_begin == 0) {
       tfp->dump(2 * i + 1);
-      tfp_stateChange->dump(2 * i + 1);
     }
 #endif
 
@@ -637,16 +635,16 @@ inline void Emulator::single_cycle() {
     bool in_range = (args.log_begin <= cycle) && (cycle <= args.log_end);
     if (in_range || force_dump_wave) {
       if (args.enable_waveform_full) {
-        if(stateChange){
+        printf("dump %lu\n", 2 * args.reset_cycles + 2 * cycles);
+        tfp->dump(2 * args.reset_cycles + 2 * cycles);
+        if(stateChange) {
+          printf("dump stateChange(clock 1)\n");
           tfp_stateChange->dump(2 * args.reset_cycles + 2 * cycles);
-        } else {
-          tfp->dump(2 * args.reset_cycles + 2 * cycles);
         }
       } else {
-        if(stateChange){
-          tfp_stateChange->dump(0);
-        }else{
-          tfp->dump(cycle);
+        tfp->dump(cycle);
+        if(stateChange) {
+          tfp_stateChange->dump(cycle);
         }
       }
     }
@@ -683,7 +681,16 @@ inline void Emulator::single_cycle() {
     bool in_range = (args.log_begin <= cycle) && (cycle <= args.log_end);
     if (in_range || force_dump_wave) {
       tfp->dump(2 * args.reset_cycles + 1 + 2 * cycles);
-      tfp_stateChange->dump(2 * args.reset_cycles + 1 + 2 * cycles);
+      if(stateChange) {
+          printf("dump stateChange(clock 0)\n");
+          tfp_stateChange->dump(2 * args.reset_cycles + 1 + 2 * cycles);
+          stateChange = false;
+
+          tfp_stateChange->close();
+          tfp_stateChange = new VerilatedVcdC;
+          dut_ptr->trace(tfp_stateChange, 99); // Trace 99 levels of hierarchy
+          tfp_stateChange->open(csr_wave_filename());
+      }
     }
   }
 #endif
@@ -920,6 +927,16 @@ int Emulator::is_finished() {
 
 int Emulator::is_good() {
   return is_good_trap();
+}
+
+inline char *Emulator::csr_wave_filename() {
+    static char csr_wave_file_buf[1024];
+    const char *csr_wave_dir = getenv("CSR_WAVE");
+    static int csr_wave_cnt;
+    assert(csr_wave_dir != NULL);
+    snprintf(csr_wave_file_buf, 1024, "%s/csr_wave_%d.vcd", csr_wave_dir, csr_wave_cnt++);
+    Info("dump to csr wave file: %s\n", csr_wave_file_buf);
+    return csr_wave_file_buf;
 }
 
 inline char *Emulator::timestamp_filename(time_t t, char *buf) {
