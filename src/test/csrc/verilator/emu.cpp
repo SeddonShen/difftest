@@ -635,10 +635,8 @@ inline void Emulator::single_cycle() {
     bool in_range = (args.log_begin <= cycle) && (cycle <= args.log_end);
     if (in_range || force_dump_wave) {
       if (args.enable_waveform_full) {
-        printf("dump %lu\n", 2 * args.reset_cycles + 2 * cycles);
         tfp->dump(2 * args.reset_cycles + 2 * cycles);
         if(stateChange) {
-          printf("dump stateChange(clock 1)\n");
           tfp_stateChange->dump(2 * args.reset_cycles + 2 * cycles);
         }
       } else {
@@ -682,7 +680,7 @@ inline void Emulator::single_cycle() {
     if (in_range || force_dump_wave) {
       tfp->dump(2 * args.reset_cycles + 1 + 2 * cycles);
       if(stateChange) {
-          printf("dump stateChange(clock 0)\n");
+          Info("Dump CSR state change at cycle %lu\n", 2 * args.reset_cycles + 1 + 2 * cycles);
           tfp_stateChange->dump(2 * args.reset_cycles + 1 + 2 * cycles);
           stateChange = false;
 
