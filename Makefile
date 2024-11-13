@@ -97,6 +97,8 @@ SIM_CXXFLAGS += -DCONFIG_DIFFTEST_PERFCNT
 endif
 endif
 
+# SIM_CXXFLAGS += -g
+
 # ChiselDB
 WITH_CHISELDB ?= 1
 ifeq ($(WITH_CHISELDB), 1)

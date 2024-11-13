@@ -46,6 +46,9 @@ int main(int argc, const char *argv[]) {
   while (!emu->is_finished()) {
     emu->tick();
   }
+  for(int i = 0; i < 10; i++) {
+    emu->tick();
+  }
   bool is_good = emu->is_good();
   delete emu;
 

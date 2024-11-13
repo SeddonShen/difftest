@@ -491,9 +491,10 @@ Emulator::Emulator(int argc, const char *argv[])
 Emulator::~Emulator() {
   // Simulation ends here, do clean up & display jobs
 #if VM_TRACE == 1
-  if (args.enable_waveform)
+  if (args.enable_waveform) {
     tfp->close();
     tfp_stateChange->close();
+  }
 #endif
 
 #if VM_COVERAGE == 1
@@ -933,8 +934,18 @@ inline char *Emulator::csr_wave_filename() {
     static int csr_wave_cnt;
     assert(csr_wave_dir != NULL);
     snprintf(csr_wave_file_buf, 1024, "%s/csr_wave_%d.vcd", csr_wave_dir, csr_wave_cnt++);
-    Info("dump to csr wave file: %s\n", csr_wave_file_buf);
+    printf("dump to csr wave file: %s\n", csr_wave_file_buf);
     return csr_wave_file_buf;
+}
+
+inline char *Emulator::csr_snapshot_filename() {
+    static char csr_snapshot_file_buf[1024];
+    const char *csr_snapshot_dir = getenv("CSR_SNAPSHOT");
+    static int csr_snapshot_cnt;
+    assert(csr_snapshot_dir != NULL);
+    snprintf(csr_snapshot_file_buf, 1024, "%s/csr_snapshot_%d.snapshot", csr_snapshot_dir, csr_snapshot_cnt++);
+    printf("dump to csr snapshot file: %s\n", csr_snapshot_file_buf);
+    return csr_snapshot_file_buf;
 }
 
 inline char *Emulator::timestamp_filename(time_t t, char *buf) {
