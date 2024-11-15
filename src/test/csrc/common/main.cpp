@@ -46,7 +46,8 @@ int main(int argc, const char *argv[]) {
   while (!emu->is_finished()) {
     emu->tick();
   }
-  for(int i = 0; i < 10; i++) {
+  for(int i = 0; i < 33; i++) {
+    emu->set_running();
     emu->tick();
   }
   bool is_good = emu->is_good();
@@ -55,6 +56,7 @@ int main(int argc, const char *argv[]) {
 #ifdef FUZZER_LIB
   stats.accumulate();
   stats.display();
+//   stats.display_uncovered_points();
 #endif
 
   common_finish();

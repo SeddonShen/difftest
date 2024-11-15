@@ -119,6 +119,9 @@ static inline void print_help(const char *file) {
   printf("      --dump-footprints=NAME dump memory access footprints to NAME\n");
   printf("      --as-footprints        load the image as memory access footprints\n");
   printf("      --dump-linearized=NAME dump the linearized footprints to NAME\n");
+// snapshot fuzz
+  printf("      --snapshot-cycles=NUM  overwrite snapshot ram at NUM cycles\n");
+  printf("      --snapshot-image=FILE  overwrite snapshot ram with this image file\n");
   printf("  -h, --help                 print program help info\n");
   printf("\n");
 }
@@ -158,6 +161,8 @@ inline EmuArgs parse_args(int argc, const char *argv[]) {
     { "remote-jtag-port",  1, NULL,  0  },
     { "iotrace-name",      1, NULL,  0  },
     { "dramsim3-ini",      1, NULL,  0  },
+    { "snapshot-cycles",   1, NULL,  0  },
+    { "snapshot-image",    1, NULL,  0  },
     { "seed",              1, NULL, 's' },
     { "max-cycles",        1, NULL, 'C' },
     { "fork-interval",     1, NULL, 'X' },
@@ -255,6 +260,8 @@ inline EmuArgs parse_args(int argc, const char *argv[]) {
             exit(1);
             break;
 #endif
+          case 26: args.snapshot_cycles = atoll_strict(optarg, "snapshot-cycles"); continue;
+          case 27: args.snapshot_image = optarg; continue;
         }
         // fall through
       default: print_help(argv[0]); exit(0);
@@ -366,20 +373,15 @@ Emulator::Emulator(int argc, const char *argv[])
     Verilated::traceEverOn(true); // Verilator must compute traced signals
 #ifdef ENABLE_FST
     tfp = new VerilatedFstC;
-    tfp_stateChange = new VerilatedFstC;
 #else
     tfp = new VerilatedVcdC;
-    tfp_stateChange = new VerilatedVcdC;
 #endif
     dut_ptr->trace(tfp, 99); // Trace 99 levels of hierarchy
-    dut_ptr->trace(tfp_stateChange, 99); // Trace 99 levels of hierarchy
     if (args.wave_path != NULL) {
       tfp->open(args.wave_path);
-      tfp_stateChange->open((std::string(args.wave_path) + "_stateChange.vcd").c_str());
     } else {
       time_t now = time(NULL);
       tfp->open(waveform_filename(now)); // Open the dump file
-      tfp_stateChange->open(csr_wave_filename());
     }
   }
 #endif
@@ -493,7 +495,6 @@ Emulator::~Emulator() {
 #if VM_TRACE == 1
   if (args.enable_waveform) {
     tfp->close();
-    tfp_stateChange->close();
   }
 #endif
 
@@ -638,12 +639,22 @@ inline void Emulator::single_cycle() {
       if (args.enable_waveform_full) {
         tfp->dump(2 * args.reset_cycles + 2 * cycles);
         if(stateChange) {
+          printf("Dump CSR state change at cycle %lu\n", cycles);
+          tfp_stateChange = new VerilatedVcdC;
+          dut_ptr->trace(tfp_stateChange, 99);
+          tfp_stateChange->open(csr_wave_filename(cycle));
           tfp_stateChange->dump(2 * args.reset_cycles + 2 * cycles);
         }
       } else {
         tfp->dump(cycle);
         if(stateChange) {
+          printf("Dump CSR state change at cycle %lu\n", cycles);
+          tfp_stateChange = new VerilatedVcdC;
+          dut_ptr->trace(tfp_stateChange, 99);
+          tfp_stateChange->open(csr_wave_filename(cycle));
           tfp_stateChange->dump(cycle);
+          tfp_stateChange->close();
+          stateChange = false;
         }
       }
     }
@@ -681,18 +692,18 @@ inline void Emulator::single_cycle() {
     if (in_range || force_dump_wave) {
       tfp->dump(2 * args.reset_cycles + 1 + 2 * cycles);
       if(stateChange) {
-          Info("Dump CSR state change at cycle %lu\n", 2 * args.reset_cycles + 1 + 2 * cycles);
           tfp_stateChange->dump(2 * args.reset_cycles + 1 + 2 * cycles);
           stateChange = false;
-
           tfp_stateChange->close();
-          tfp_stateChange = new VerilatedVcdC;
-          dut_ptr->trace(tfp_stateChange, 99); // Trace 99 levels of hierarchy
-          tfp_stateChange->open(csr_wave_filename());
       }
     }
   }
 #endif
+  
+// Snapshot Fuzz
+  if(args.snapshot_image != nullptr && cycles == args.snapshot_cycles) {
+    init_ram(args.snapshot_image, simMemory->get_size());
+  }
 
 end_single_cycle:
   cycles++;
@@ -928,12 +939,11 @@ int Emulator::is_good() {
   return is_good_trap();
 }
 
-inline char *Emulator::csr_wave_filename() {
+inline char *Emulator::csr_wave_filename(uint64_t cycle) {
     static char csr_wave_file_buf[1024];
     const char *csr_wave_dir = getenv("CSR_WAVE");
-    static int csr_wave_cnt;
     assert(csr_wave_dir != NULL);
-    snprintf(csr_wave_file_buf, 1024, "%s/csr_wave_%d.vcd", csr_wave_dir, csr_wave_cnt++);
+    snprintf(csr_wave_file_buf, 1024, "%s/csr_wave_%lu.vcd", csr_wave_dir, cycle);
     printf("dump to csr wave file: %s\n", csr_wave_file_buf);
     return csr_wave_file_buf;
 }

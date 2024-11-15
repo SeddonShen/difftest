@@ -80,6 +80,9 @@ struct EmuArgs {
   bool trace_is_read = true;
   bool dump_coverage = false;
   bool image_as_footprints = false;
+// snapshot fuzz
+  uint64_t snapshot_cycles = 0;
+  const char *snapshot_image = nullptr;
 };
 
 class Emulator final : public DUT {
@@ -115,7 +118,7 @@ private:
   inline void single_cycle();
   void trigger_stat_dump();
   void display_trapinfo();
-  inline char *csr_wave_filename();
+  inline char *csr_wave_filename(uint64_t cycle);
   inline char *csr_snapshot_filename();
   inline char *timestamp_filename(time_t t, char *buf);
   inline char *logdb_filename(time_t t);
@@ -142,6 +145,9 @@ public:
   }
   EmuArgs get_args() const {
     return args;
+  }
+  void set_running() {
+    trapCode = STATE_RUNNING;
   }
   bool is_good_trap() {
 #ifdef FUZZING
