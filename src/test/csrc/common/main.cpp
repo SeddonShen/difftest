@@ -46,11 +46,12 @@ int main(int argc, const char *argv[]) {
   while (!emu->is_finished()) {
     emu->tick();
   }
+  bool is_good = emu->is_good();
+  bool is_unknown = stats.exit_code == SimExitCode::unknown;
   for(int i = 0; i < 33; i++) {
     emu->set_running();
     emu->tick();
   }
-  bool is_good = emu->is_good();
   delete emu;
 
 #ifdef FUZZER_LIB
@@ -69,7 +70,7 @@ int main(int argc, const char *argv[]) {
   return 0;
 #else
 #ifdef FUZZER_LIB
-  return !is_good || stats.exit_code == SimExitCode::unknown;
+  return !is_good || is_unknown;
 #else
   return !is_good;
 #endif // FUZZER_LIB
