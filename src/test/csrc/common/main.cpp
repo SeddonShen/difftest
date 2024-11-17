@@ -48,7 +48,7 @@ int main(int argc, const char *argv[]) {
   }
   bool is_good = emu->is_good();
   bool is_unknown = stats.exit_code == SimExitCode::unknown;
-  for(int i = 0; i < 33; i++) {
+  for(int i = 0; i < 2; i++) {
     emu->set_running();
     emu->tick();
   }

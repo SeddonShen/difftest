@@ -120,6 +120,8 @@ static inline void print_help(const char *file) {
   printf("      --as-footprints        load the image as memory access footprints\n");
   printf("      --dump-linearized=NAME dump the linearized footprints to NAME\n");
 // snapshot fuzz
+  printf("      --fuzz-id=NUM          fuzz id\n");
+  printf("      --dump-csr-change      dump csr change\n");
   printf("      --snapshot-cycles=NUM  overwrite snapshot ram at NUM cycles\n");
   printf("      --snapshot-image=FILE  overwrite snapshot ram with this image file\n");
   printf("  -h, --help                 print program help info\n");
@@ -161,6 +163,8 @@ inline EmuArgs parse_args(int argc, const char *argv[]) {
     { "remote-jtag-port",  1, NULL,  0  },
     { "iotrace-name",      1, NULL,  0  },
     { "dramsim3-ini",      1, NULL,  0  },
+    { "fuzz-id",           1, NULL,  0  },
+    { "dump-csr-change",   0, NULL,  0  },
     { "snapshot-cycles",   1, NULL,  0  },
     { "snapshot-image",    1, NULL,  0  },
     { "seed",              1, NULL, 's' },
@@ -260,8 +264,10 @@ inline EmuArgs parse_args(int argc, const char *argv[]) {
             exit(1);
             break;
 #endif
-          case 26: args.snapshot_cycles = atoll_strict(optarg, "snapshot-cycles"); continue;
-          case 27: args.snapshot_image = optarg; continue;
+          case 26: args.fuzz_id = atoll_strict(optarg, "fuzz-id"); continue;
+          case 27: args.dump_csr_change = true; continue;
+          case 28: args.snapshot_cycles = atoll_strict(optarg, "snapshot-cycles"); continue;
+          case 29: args.snapshot_image = optarg; continue;
         }
         // fall through
       default: print_help(argv[0]); exit(0);
@@ -446,6 +452,11 @@ Emulator::Emulator(int argc, const char *argv[])
       difftest[i]->set_trace(args.trace_name, args.trace_is_read);
     }
   }
+
+  if (args.dump_csr_change) {
+    difftest_dump_csr_change();
+  }
+  difftest_set_fuzz_id(args.fuzz_id);
 #endif // CONFIG_NO_DIFFTEST
 
   init_device();
@@ -941,9 +952,10 @@ int Emulator::is_good() {
 
 inline char *Emulator::csr_wave_filename(uint64_t cycle) {
     static char csr_wave_file_buf[1024];
-    const char *csr_wave_dir = getenv("CSR_WAVE");
-    assert(csr_wave_dir != NULL);
-    snprintf(csr_wave_file_buf, 1024, "%s/csr_wave_%lu.vcd", csr_wave_dir, cycle);
+    static int csr_wave_cnt;
+    const char *noop_home_dir = getenv("NOOP_HOME");
+    assert(noop_home_dir != NULL);
+    snprintf(csr_wave_file_buf, 1024, "%s/tmp/fuzz_run/%lu/csr_wave/csr_wave_%d_%lu.vcd", noop_home_dir, args.fuzz_id, csr_wave_cnt++, cycle);
     printf("dump to csr wave file: %s\n", csr_wave_file_buf);
     return csr_wave_file_buf;
 }

@@ -81,6 +81,8 @@ struct EmuArgs {
   bool dump_coverage = false;
   bool image_as_footprints = false;
 // snapshot fuzz
+  uint64_t fuzz_id = 0;
+  bool dump_csr_change = false;
   uint64_t snapshot_cycles = 0;
   const char *snapshot_image = nullptr;
 };

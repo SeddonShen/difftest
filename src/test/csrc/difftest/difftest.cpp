@@ -29,7 +29,15 @@
 #endif // CONFIG_DIFFTEST_PERFCNT
 
 Difftest **difftest = NULL;
-uint64_t mstatus_p = 0x0000000a00001800; // 处理器的初始mstatus值，试情况而定
+
+// csr state change
+bool csr_init = false;
+char csr_change_file[1024];
+uint32_t csr_state_change_cnt;
+uint64_t privilegeMode_p;
+uint64_t mstatus_p;
+uint64_t sat_p;
+uint64_t medeleg_p;
 
 int difftest_init() {
 #ifdef CONFIG_DIFFTEST_PERFCNT
@@ -45,6 +53,18 @@ int difftest_init() {
     difftest[i]->dut = diffstate_buffer[i]->get(0, 0);
   }
   return 0;
+}
+
+void difftest_set_fuzz_id(uint64_t id) {
+  for (int i = 0; i < NUM_CORES; i++) {
+    difftest[i]->fuzz_id = id;
+  }
+}
+
+void difftest_dump_csr_change() {
+  for (int i = 0; i < NUM_CORES; i++) {
+    difftest[i]->dump_csr_change = true;
+  }
 }
 
 int init_nemuproxy(size_t ramsize = 0) {
@@ -394,17 +414,44 @@ int Difftest::step(bool* stateChange) {
 #endif // FUZZER_LIB
     return 1;
   }
-  
-  if(mstatus_p != dut->csr.mstatus){
+
+  if(!csr_init){
+    privilegeMode_p = dut->csr.privilegeMode;
+    mstatus_p = dut->csr.mstatus;
+    sat_p = dut->csr.satp;
+    medeleg_p = dut->csr.medeleg;
+    csr_init = true;
+  }
+
+  bool privChange = privilegeMode_p != dut->csr.privilegeMode;
+  bool mstatusChange = mstatus_p != dut->csr.mstatus;
+  bool satChange = sat_p != dut->csr.satp;
+  bool medelegChange = medeleg_p != dut->csr.medeleg;
+
+  if(privChange || mstatusChange || satChange || medelegChange){
     *stateChange = true;
-    // 这里似乎有个Bug 第一次的状态切换因为顺序问题并不会保存
-    // 现在和Difftest绑定似乎也是不合理的，这样的话在-no-diff的时候不能保存状态切换
-    printf("[SFuzz Find: %d] DUT Mstatus(p->now): %lx -> %lx\n", mstatus_p != dut->csr.mstatus, mstatus_p, dut->csr.mstatus);
+    printf("privChange: %d, mstatusChange: %d, satChange: %d, medelegChange: %d\n", privChange, mstatusChange, satChange, medelegChange);
+    const char *noop_home_dir = getenv("NOOP_HOME");
+    assert(noop_home_dir != NULL);
+    sprintf(csr_change_file, "%s/tmp/fuzz_run/%lu/csr_transition/csr_transition_%d.csv", noop_home_dir, fuzz_id, csr_state_change_cnt++);
+    printf("dump to csr change file: %s\n", csr_change_file);
+    if(dump_csr_change) {
+        FILE *fp = fopen(csr_change_file, "w");
+        fprintf(fp, "privilegeMode,mstatus,satp,medeleg\n");
+        fprintf(fp, "%lu, %lx, %lx, %lx\n", privilegeMode_p, mstatus_p, sat_p, medeleg_p);
+        fprintf(fp, "%lu, %lx, %lx, %lx\n", dut->csr.privilegeMode, dut->csr.mstatus, dut->csr.satp, dut->csr.medeleg);
+        // fprintf(fp, "%d, %d, %d, %d\n", privChange, mstatusChange, satChange, medelegChange);
+        fclose(fp);
+    }
   } else {
     *stateChange = false;
   }
 
+  privilegeMode_p = dut->csr.privilegeMode;
   mstatus_p = dut->csr.mstatus;
+  sat_p = dut->csr.satp;
+  medeleg_p = dut->csr.medeleg;
+
   return 0;
 }
 
