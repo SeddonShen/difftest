@@ -714,6 +714,7 @@ inline void Emulator::single_cycle() {
 // Snapshot Fuzz
   if(args.snapshot_image != nullptr && cycles == args.snapshot_cycles) {
     init_ram(args.snapshot_image, simMemory->get_size());
+    init_goldenmem();
   }
 
 end_single_cycle:
