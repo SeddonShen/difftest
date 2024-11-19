@@ -711,11 +711,6 @@ inline void Emulator::single_cycle() {
   }
 #endif
   
-// Snapshot Fuzz
-  if(args.snapshot_image != nullptr && cycles == args.snapshot_cycles) {
-    init_ram(args.snapshot_image, simMemory->get_size());
-    init_goldenmem();
-  }
 
 end_single_cycle:
   cycles++;
@@ -925,6 +920,12 @@ int Emulator::tick() {
 #ifdef ENABLE_IPC
   fclose(args.ipc_file);
 #endif
+
+// Snapshot Fuzz
+  if(args.snapshot_image != nullptr && cycles == args.snapshot_cycles+1) {
+    init_ram(args.snapshot_image, simMemory->get_size());
+    init_goldenmem();
+  }
 
   if (args.enable_fork) {
     static bool have_initial_fork = false;
