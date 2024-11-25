@@ -604,6 +604,13 @@ inline void Emulator::reset_ncycles(size_t cycles) {
 #if VM_TRACE == 1
     if (args.enable_waveform && args.enable_waveform_full && args.log_begin == 0) {
       tfp->dump(2 * i);
+      if(i == 40) {
+          tfp_stateChange = new VerilatedVcdC;
+          dut_ptr->trace(tfp_stateChange, 99);
+          printf("dump reset state at cycle %d\n", i);
+          tfp_stateChange->open(csr_wave_filename(i));
+          tfp_stateChange->dump(2 * i);
+      }
     }
 #endif
 
@@ -616,6 +623,10 @@ inline void Emulator::reset_ncycles(size_t cycles) {
 #if VM_TRACE == 1
     if (args.enable_waveform && args.enable_waveform_full && args.log_begin == 0) {
       tfp->dump(2 * i + 1);
+      if(i == 40) {
+          tfp_stateChange->dump(2 * i + 1);
+          tfp_stateChange->close();
+      }
     }
 #endif
 
@@ -920,12 +931,6 @@ int Emulator::tick() {
 #ifdef ENABLE_IPC
   fclose(args.ipc_file);
 #endif
-
-// Snapshot Fuzz
-  if(args.snapshot_image != nullptr && cycles == args.snapshot_cycles+1) {
-    init_ram(args.snapshot_image, simMemory->get_size());
-    init_goldenmem();
-  }
 
   if (args.enable_fork) {
     static bool have_initial_fork = false;
