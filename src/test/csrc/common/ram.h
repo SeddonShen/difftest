@@ -126,6 +126,10 @@ public:
   }
   virtual uint64_t &at(uint64_t index) = 0;
   void display_stats();
+  void write(uint64_t data) {
+    printf("write not support by SimMemory\n");
+    // assert(0);
+  }
 };
 
 class MmapMemory : public SimMemory {
@@ -164,6 +168,11 @@ public:
   MmapMemoryWithFootprints(const char *image, uint64_t n_bytes, const char *footprints_name);
   ~MmapMemoryWithFootprints();
   uint64_t &at(uint64_t index);
+
+  void write(uint64_t data) {
+    printf("write flag %lx to footprints\n", data);
+    footprints_file.write(reinterpret_cast<const char *>(&data), sizeof(data));
+  }
 };
 
 class FootprintsMemory : public SimMemory {

@@ -122,8 +122,9 @@ static inline void print_help(const char *file) {
 // snapshot fuzz
   printf("      --fuzz-id=NUM          fuzz id\n");
   printf("      --dump-csr-change      dump csr change\n");
-  printf("      --snapshot-cycles=NUM  overwrite snapshot ram at NUM cycles\n");
-  printf("      --snapshot-image=FILE  overwrite snapshot ram with this image file\n");
+  printf("      --run-snapshot         run snapshot fuzz\n");
+//   printf("      --snapshot-cycles=NUM  overwrite snapshot ram at NUM cycles\n");
+//   printf("      --snapshot-image=FILE  overwrite snapshot ram with this image file\n");
   printf("  -h, --help                 print program help info\n");
   printf("\n");
 }
@@ -165,8 +166,7 @@ inline EmuArgs parse_args(int argc, const char *argv[]) {
     { "dramsim3-ini",      1, NULL,  0  },
     { "fuzz-id",           1, NULL,  0  },
     { "dump-csr-change",   0, NULL,  0  },
-    { "snapshot-cycles",   1, NULL,  0  },
-    { "snapshot-image",    1, NULL,  0  },
+    { "run-snapshot",      0, NULL,  0  },
     { "seed",              1, NULL, 's' },
     { "max-cycles",        1, NULL, 'C' },
     { "fork-interval",     1, NULL, 'X' },
@@ -266,8 +266,7 @@ inline EmuArgs parse_args(int argc, const char *argv[]) {
 #endif
           case 26: args.fuzz_id = atoll_strict(optarg, "fuzz-id"); continue;
           case 27: args.dump_csr_change = true; continue;
-          case 28: args.snapshot_cycles = atoll_strict(optarg, "snapshot-cycles"); continue;
-          case 29: args.snapshot_image = optarg; continue;
+          case 28: args.run_snapshot = true; continue;
         }
         // fall through
       default: print_help(argv[0]); exit(0);
@@ -393,7 +392,8 @@ Emulator::Emulator(int argc, const char *argv[])
 #endif
 
   // init core
-  reset_ncycles(args.reset_cycles);
+  if(!args.run_snapshot)
+    reset_ncycles(args.reset_cycles);
 
   // init ram
   uint64_t ram_size = DEFAULT_EMU_RAM_SIZE;
@@ -604,13 +604,6 @@ inline void Emulator::reset_ncycles(size_t cycles) {
 #if VM_TRACE == 1
     if (args.enable_waveform && args.enable_waveform_full && args.log_begin == 0) {
       tfp->dump(2 * i);
-      if(i == 40) {
-          tfp_stateChange = new VerilatedVcdC;
-          dut_ptr->trace(tfp_stateChange, 99);
-          printf("dump reset state at cycle %d\n", i);
-          tfp_stateChange->open(csr_wave_filename(i));
-          tfp_stateChange->dump(2 * i);
-      }
     }
 #endif
 
@@ -623,10 +616,6 @@ inline void Emulator::reset_ncycles(size_t cycles) {
 #if VM_TRACE == 1
     if (args.enable_waveform && args.enable_waveform_full && args.log_begin == 0) {
       tfp->dump(2 * i + 1);
-      if(i == 40) {
-          tfp_stateChange->dump(2 * i + 1);
-          tfp_stateChange->close();
-      }
     }
 #endif
 
@@ -717,6 +706,13 @@ inline void Emulator::single_cycle() {
           tfp_stateChange->dump(2 * args.reset_cycles + 1 + 2 * cycles);
           stateChange = false;
           tfp_stateChange->close();
+
+          if(args.footprints_name) {
+            dump_footprints();
+          }
+
+        //   snapshot_save(csr_snapshot_filename(cycle));
+        //   snapshot_slot[0].save();
       }
     }
   }
@@ -957,9 +953,23 @@ int Emulator::is_good() {
   return is_good_trap();
 }
 
+inline void Emulator::dump_footprints() {
+    // delete simMemory;
+    // static char footprints_name[1024];
+    // static uint32_t footprints_cnt = 1;
+    // const char *noop_home_dir = getenv("NOOP_HOME");
+    // assert(noop_home_dir != NULL);
+    // snprintf(footprints_name, 1024, "%s/tmp/fuzz_run/%lu/footprints/footprints_%d", noop_home_dir, args.fuzz_id, footprints_cnt++);
+    // args.footprints_name = footprints_name;
+    // uint64_t ram_size = DEFAULT_EMU_RAM_SIZE;
+    // simMemory = new MmapMemoryWithFootprints(args.image, ram_size, args.footprints_name);
+    // uint64_t flag = 0x1234567887654321;
+    // dynamic_cast<MmapMemoryWithFootprints *>(simMemory)->write(flag);
+}
+
 inline char *Emulator::csr_wave_filename(uint64_t cycle) {
     static char csr_wave_file_buf[1024];
-    static int csr_wave_cnt;
+    static uint32_t csr_wave_cnt;
     const char *noop_home_dir = getenv("NOOP_HOME");
     assert(noop_home_dir != NULL);
     snprintf(csr_wave_file_buf, 1024, "%s/tmp/fuzz_run/%lu/csr_wave/csr_wave_%d_%lu.vcd", noop_home_dir, args.fuzz_id, csr_wave_cnt++, cycle);
@@ -967,12 +977,12 @@ inline char *Emulator::csr_wave_filename(uint64_t cycle) {
     return csr_wave_file_buf;
 }
 
-inline char *Emulator::csr_snapshot_filename() {
+inline char *Emulator::csr_snapshot_filename(uint64_t cycle) {
     static char csr_snapshot_file_buf[1024];
-    const char *csr_snapshot_dir = getenv("CSR_SNAPSHOT");
-    static int csr_snapshot_cnt;
-    assert(csr_snapshot_dir != NULL);
-    snprintf(csr_snapshot_file_buf, 1024, "%s/csr_snapshot_%d.snapshot", csr_snapshot_dir, csr_snapshot_cnt++);
+    static uint32_t csr_snapshot_cnt;
+    const char *noop_home_dir = getenv("NOOP_HOME");
+    assert(noop_home_dir != NULL);
+    snprintf(csr_snapshot_file_buf, 1024, "%s/tmp/fuzz_run/%lu/csr_snapshot_%d_%lu", noop_home_dir, args.fuzz_id, csr_snapshot_cnt++, cycle);
     printf("dump to csr snapshot file: %s\n", csr_snapshot_file_buf);
     return csr_snapshot_file_buf;
 }
@@ -1101,7 +1111,7 @@ void Emulator::display_trapinfo() {
 void Emulator::snapshot_save(const char *filename) {
   static int last_slot = 0;
   VerilatedSaveMem &stream = snapshot_slot[last_slot];
-  last_slot = !last_slot;
+//   last_slot = !last_slot;
 
   stream.init(filename);
   stream << *dut_ptr;
@@ -1113,13 +1123,14 @@ void Emulator::snapshot_save(const char *filename) {
     printf("simMemory does not support as_ptr\n");
     assert(0);
   }
-  stream.unbuf_write(simMemory->as_ptr(), size);
+//   stream.unbuf_write(simMemory->as_ptr(), size);
 
   auto diff = difftest[0];
   uint64_t cycleCnt = diff->get_trap_event()->cycleCnt;
   stream.unbuf_write(&cycleCnt, sizeof(cycleCnt));
 
   auto proxy = diff->proxy;
+  proxy->ref_reg_display();
   stream.unbuf_write(&proxy->regs_int, sizeof(proxy->regs_int));
 #ifdef CONFIG_DIFFTEST_ARCHFPREGSTATE
   stream.unbuf_write(&proxy->regs_fp, sizeof(proxy->regs_fp));
@@ -1129,7 +1140,7 @@ void Emulator::snapshot_save(const char *filename) {
 
   char *buf = (char *)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
   proxy->ref_memcpy(PMEM_BASE, buf, size, REF_TO_DUT);
-  stream.unbuf_write(buf, size);
+//   stream.unbuf_write(buf, size);
   munmap(buf, size);
 
   uint64_t csr_buf[4096];

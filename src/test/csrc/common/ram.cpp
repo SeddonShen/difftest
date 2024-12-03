@@ -351,6 +351,7 @@ MmapMemoryWithFootprints::MmapMemoryWithFootprints(const char *image, uint64_t n
   uint64_t n_touched = memory_size / sizeof(uint64_t);
   touched = (uint8_t *)mmap(NULL, n_touched, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
   footprints_file.open(footprints_name, std::ios::binary);
+  printf("open footprint file: %s\n", footprints_name);
   if (!footprints_file.is_open()) {
     printf("Cannot open %s as the footprints file\n", footprints_name);
     assert(0);
@@ -358,6 +359,7 @@ MmapMemoryWithFootprints::MmapMemoryWithFootprints(const char *image, uint64_t n
 }
 
 MmapMemoryWithFootprints::~MmapMemoryWithFootprints() {
+  printf("close footprint file\n");
   munmap(touched, memory_size / sizeof(uint64_t));
   footprints_file.close();
 }

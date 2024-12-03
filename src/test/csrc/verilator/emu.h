@@ -83,8 +83,7 @@ struct EmuArgs {
 // snapshot fuzz
   uint64_t fuzz_id = 0;
   bool dump_csr_change = false;
-  uint64_t snapshot_cycles = 0;
-  const char *snapshot_image = nullptr;
+  bool run_snapshot = false;
 };
 
 class Emulator final : public DUT {
@@ -120,8 +119,9 @@ private:
   inline void single_cycle();
   void trigger_stat_dump();
   void display_trapinfo();
+  inline void dump_footprints();
   inline char *csr_wave_filename(uint64_t cycle);
-  inline char *csr_snapshot_filename();
+  inline char *csr_snapshot_filename(uint64_t cycle);
   inline char *timestamp_filename(time_t t, char *buf);
   inline char *logdb_filename(time_t t);
   inline char *snapshot_filename(time_t t);
