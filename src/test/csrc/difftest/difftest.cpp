@@ -438,8 +438,8 @@ int Difftest::step(bool* stateChange) {
     if(dump_csr_change) {
         FILE *fp = fopen(csr_change_file, "w");
         fprintf(fp, "privilegeMode,mstatus,satp,medeleg\n");
-        fprintf(fp, "%lu, %lx, %lx, %lx\n", privilegeMode_p, mstatus_p, sat_p, medeleg_p);
-        fprintf(fp, "%lu, %lx, %lx, %lx\n", dut->csr.privilegeMode, dut->csr.mstatus, dut->csr.satp, dut->csr.medeleg);
+        fprintf(fp, "%lu,%lx,%lx,%lx\n", privilegeMode_p, mstatus_p, sat_p, medeleg_p);
+        fprintf(fp, "%lu,%lx,%lx,%lx\n", dut->csr.privilegeMode, dut->csr.mstatus, dut->csr.satp, dut->csr.medeleg);
         // fprintf(fp, "%d, %d, %d, %d\n", privChange, mstatusChange, satChange, medelegChange);
         fclose(fp);
     }
