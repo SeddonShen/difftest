@@ -121,7 +121,7 @@ private:
   void display_trapinfo();
   inline void dump_footprints();
   inline char *csr_wave_filename(uint64_t cycle);
-  inline char *csr_snapshot_filename(uint64_t cycle);
+  inline char *csr_snapshot_filename();
   inline char *timestamp_filename(time_t t, char *buf);
   inline char *logdb_filename(time_t t);
   inline char *snapshot_filename(time_t t);
@@ -147,6 +147,12 @@ public:
   }
   EmuArgs get_args() const {
     return args;
+  }
+  bool is_run_snapshot() const {
+    return args.run_snapshot;
+  }
+  void set_no_diff() {
+    args.enable_diff = false;
   }
   void set_running() {
     trapCode = STATE_RUNNING;

@@ -428,23 +428,23 @@ int Difftest::step(bool* stateChange) {
   bool satChange = sat_p != dut->csr.satp;
   bool medelegChange = medeleg_p != dut->csr.medeleg;
 
-  if(privChange || mstatusChange || satChange || medelegChange){
-    *stateChange = true;
-    printf("privChange: %d, mstatusChange: %d, satChange: %d, medelegChange: %d\n", privChange, mstatusChange, satChange, medelegChange);
-    const char *noop_home_dir = getenv("NOOP_HOME");
-    assert(noop_home_dir != NULL);
-    sprintf(csr_change_file, "%s/tmp/fuzz_run/%lu/csr_transition/csr_transition_%d.csv", noop_home_dir, fuzz_id, csr_state_change_cnt++);
-    printf("dump to csr change file: %s\n", csr_change_file);
-    if(dump_csr_change) {
+  if(dump_csr_change) {
+    if(privChange || mstatusChange || satChange || medelegChange){
+        *stateChange = true;
+        printf("privChange: %d, mstatusChange: %d, satChange: %d, medelegChange: %d\n", privChange, mstatusChange, satChange, medelegChange);
+        const char *noop_home_dir = getenv("NOOP_HOME");
+        assert(noop_home_dir != NULL);
+        sprintf(csr_change_file, "%s/tmp/fuzz_run/%lu/csr_transition/csr_transition_%d.csv", noop_home_dir, fuzz_id, csr_state_change_cnt++);
+        printf("dump to csr change file: %s\n", csr_change_file);
         FILE *fp = fopen(csr_change_file, "w");
         fprintf(fp, "privilegeMode,mstatus,satp,medeleg\n");
         fprintf(fp, "%lu,%lx,%lx,%lx\n", privilegeMode_p, mstatus_p, sat_p, medeleg_p);
         fprintf(fp, "%lu,%lx,%lx,%lx\n", dut->csr.privilegeMode, dut->csr.mstatus, dut->csr.satp, dut->csr.medeleg);
         // fprintf(fp, "%d, %d, %d, %d\n", privChange, mstatusChange, satChange, medelegChange);
         fclose(fp);
+    } else {
+        *stateChange = false;
     }
-  } else {
-    *stateChange = false;
   }
 
   privilegeMode_p = dut->csr.privilegeMode;
@@ -1294,7 +1294,7 @@ void Difftest::display() {
   printf("\n==============  REF Regs  ==============\n");
   fflush(stdout);
   proxy->ref_reg_display();
-  printf("privilegeMode: %lu\n", dut->csr.privilegeMode);
+  printf("dut privilegeMode: %lu\n", dut->csr.privilegeMode);
 }
 
 void CommitTrace::display(bool use_spike) {

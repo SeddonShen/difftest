@@ -141,7 +141,8 @@ RefProxy::~RefProxy() {
 }
 
 void RefProxy::regcpy(DiffTestState *dut) {
-  memcpy(&regs_int, dut->regs_int.value, 32 * sizeof(uint64_t));
+  uint64_t reg_int_value[32] = {0};
+  memcpy(&regs_int, reg_int_value, 32 * sizeof(uint64_t));
 #ifdef CONFIG_DIFFTEST_ARCHFPREGSTATE
   memcpy(&regs_fp, dut->regs_fp.value, 32 * sizeof(uint64_t));
 #endif // CONFIG_DIFFTEST_ARCHFPREGSTATE

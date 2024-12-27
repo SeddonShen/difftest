@@ -36,7 +36,8 @@
 // -----------------------------------------------------------------------
 
 // emulated memory size (Byte)
-#define DEFAULT_EMU_RAM_SIZE (8 * 1024 * 1024 * 1024UL) // 8 GB
+// #define DEFAULT_EMU_RAM_SIZE (8 * 1024 * 1024 * 1024UL) // 8 GB
+#define DEFAULT_EMU_RAM_SIZE (1536 * 1024 * 1024UL) // 1536 MB
 
 // physical memory base address
 #define PMEM_BASE 0x80000000UL
@@ -72,7 +73,8 @@ extern unsigned long EMU_FLASH_SIZE;
 // Difftest interface config
 // -----------------------------------------------------------------------
 #ifndef REF_PROXY
-#define REF_PROXY NemuProxy
+// #define REF_PROXY NemuProxy
+#define REF_PROXY SpikeProxy
 #endif
 
 // -----------------------------------------------------------------------
