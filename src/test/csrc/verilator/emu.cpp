@@ -443,10 +443,13 @@ Emulator::Emulator(int argc, const char *argv[])
     }
   }
 
-  if (args.dump_csr_change) {
-    difftest_dump_csr_change();
+  if (args.run_snapshot) {
+    difftest[0]->run_snapshot = true;
   }
-  difftest_set_fuzz_id(args.fuzz_id);
+  if (args.dump_csr_change) {
+    difftest[0]->dump_csr_change = true;
+  }
+  difftest[0]->fuzz_id = args.fuzz_id;
 #endif // CONFIG_NO_DIFFTEST
 
   init_device();
@@ -474,11 +477,6 @@ Emulator::Emulator(int argc, const char *argv[])
   snapshot_slot = new VerilatedSaveMem[2];
   if (args.snapshot_path != NULL) {
     Info("loading from snapshot `%s`...\n", args.snapshot_path);
-    printf("REF execute 1 step to enter debug mode\n");
-    difftest[0]->proxy->ref_exec(1);
-    // printf("======================  REF reg display ====================\n");
-    // difftest[0]->proxy->ref_reg_display();
-    // printf("======================  REF reg display end ================\n");
     snapshot_load(args.snapshot_path);
     auto cycleCnt = difftest[0]->get_trap_event()->cycleCnt;
     Info("model cycleCnt = %" PRIu64 "\n", cycleCnt);
@@ -901,22 +899,22 @@ int Emulator::tick() {
 #endif // ENABLE_RUNAHEAD
 
 #ifdef VM_SAVABLE
-  if (args.enable_snapshot) {
-    static int snapshot_count = 0;
-    uint32_t t = uptime();
-    if (trapCode != STATE_GOODTRAP && t - lasttime_snapshot > 1000 * SNAPSHOT_INTERVAL) {
-      // save snapshot every 60s
-      time_t now = time(NULL);
-      snapshot_save(snapshot_filename(now));
-      lasttime_snapshot = t;
-      // dump one snapshot to file every 60 snapshots
-      snapshot_count++;
-      if (snapshot_count == 60) {
-        snapshot_slot[0].save();
-        snapshot_count = 0;
-      }
-    }
-  }
+//   if (args.enable_snapshot) {
+//     static int snapshot_count = 0;
+//     uint32_t t = uptime();
+//     if (trapCode != STATE_GOODTRAP && t - lasttime_snapshot > 1000 * SNAPSHOT_INTERVAL) {
+//       // save snapshot every 60s
+//       time_t now = time(NULL);
+//       snapshot_save(snapshot_filename(now));
+//       lasttime_snapshot = t;
+//       // dump one snapshot to file every 60 snapshots
+//       snapshot_count++;
+//       if (snapshot_count == 60) {
+//         snapshot_slot[0].save();
+//         snapshot_count = 0;
+//       }
+//     }
+//   }
 #endif
 
 #ifdef DEBUG_TILELINK
@@ -1133,9 +1131,9 @@ void Emulator::snapshot_save(const char *filename) {
 //   stream.unbuf_write(simMemory->as_ptr(), size);
 
   auto diff = difftest[0];
-  uint64_t cycleCnt = diff->get_trap_event()->cycleCnt;
+//   uint64_t cycleCnt = diff->get_trap_event()->cycleCnt;
 //   stream.unbuf_write(&cycleCnt, sizeof(cycleCnt));
-  fwrite(&cycleCnt, sizeof(cycleCnt), 1, fp);
+//   fwrite(&cycleCnt, sizeof(cycleCnt), 1, fp);
 
   auto proxy = diff->proxy;
 //   stream.unbuf_write(&proxy->regs_int, sizeof(proxy->regs_int));
@@ -1149,15 +1147,19 @@ void Emulator::snapshot_save(const char *filename) {
   fwrite(&proxy->csr, sizeof(proxy->csr), 1, fp);
   fwrite(&proxy->pc, sizeof(proxy->pc), 1, fp);
 
+//   printf("\n==============  Save Snapshot  ==============\n");
+//   proxy->ref_reg_display();
+//   printf("\n==============       End       ==============\n");
+
 //   char *buf = (char *)mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_ANON | MAP_PRIVATE, -1, 0);
 //   proxy->ref_memcpy(PMEM_BASE, buf, size, REF_TO_DUT);
 //   stream.unbuf_write(buf, size);
 //   munmap(buf, size);
 
-  uint64_t csr_buf[4096];
-  proxy->ref_csrcpy(csr_buf, REF_TO_DUT);
+//   uint64_t csr_buf[4096];
+//   proxy->ref_csrcpy(csr_buf, REF_TO_DUT);
 //   stream.unbuf_write(&csr_buf, sizeof(csr_buf));
-  fwrite(&csr_buf, sizeof(csr_buf), 1, fp);
+//   fwrite(&csr_buf, sizeof(csr_buf), 1, fp);
 
 //   long sdcard_offset;
 //   if (fp)
@@ -1188,9 +1190,9 @@ void Emulator::snapshot_load(const char *filename) {
 //   stream.read(simMemory->as_ptr(), size);
 
   auto diff = difftest[0];
-  uint64_t *cycleCnt = &(diff->get_trap_event()->cycleCnt);
+//   uint64_t *cycleCnt = &(diff->get_trap_event()->cycleCnt);
 //   stream.read(cycleCnt, sizeof(*cycleCnt));
-  fread(cycleCnt, sizeof(*cycleCnt), 1, fp);
+//   fread(cycleCnt, sizeof(*cycleCnt), 1, fp);
 
   auto proxy = diff->proxy;
 //   stream.read(&proxy->regs_int, sizeof(proxy->regs_int));
@@ -1211,10 +1213,10 @@ void Emulator::snapshot_load(const char *filename) {
 //   proxy->ref_memcpy(PMEM_BASE, buf, size, DUT_TO_REF);
 //   munmap(buf, size);
 
-  uint64_t csr_buf[4096];
+//   uint64_t csr_buf[4096];
 //   stream.read(&csr_buf, sizeof(csr_buf));
-  fread(&csr_buf, sizeof(csr_buf), 1, fp);
-  proxy->ref_csrcpy(csr_buf, DUT_TO_REF);
+//   fread(&csr_buf, sizeof(csr_buf), 1, fp);
+//   proxy->ref_csrcpy(csr_buf, DUT_TO_REF);
 
 //   long sdcard_offset = 0;
 //   stream.read(&sdcard_offset, sizeof(sdcard_offset));
@@ -1224,9 +1226,9 @@ void Emulator::snapshot_load(const char *filename) {
 
   fclose(fp);
 
-  printf("\n==============  Load Snapshot  ==============\n");
-  proxy->ref_reg_display();
-  printf("\n==============       End       ==============\n");
+//   printf("\n==============  Load Snapshot  ==============\n");
+//   proxy->ref_reg_display();
+//   printf("\n==============       End       ==============\n");
 
   // No one uses snapshot when !has_commit, isn't it?
   diff->has_commit = 1;

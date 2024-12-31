@@ -226,6 +226,8 @@ public:
   // snapshot fuzz
   uint64_t fuzz_id = 0;
   bool dump_csr_change = false;
+  bool run_snapshot = false;
+  bool mem_cpy = false;
 
   void display();
   void display_stats();
@@ -446,10 +448,6 @@ void difftest_trace_read();
 void difftest_trace_write(int step);
 
 int init_nemuproxy(size_t);
-
-// snapshot fuzz
-void difftest_set_fuzz_id(uint64_t id);
-void difftest_dump_csr_change();
 
 #ifdef CONFIG_DIFFTEST_SQUASH
 extern "C" void set_squash_scope();

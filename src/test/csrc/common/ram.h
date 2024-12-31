@@ -150,6 +150,8 @@ public:
     func(ram, n_bytes);
   }
   uint64_t &at(uint64_t index) {
+    // printf("addr: 0x%016lx\n", index*8);
+    // printf("data: 0x%016lx\n", ram[index]);
     on_access(index);
     return ram[index];
   }

@@ -55,18 +55,6 @@ int difftest_init() {
   return 0;
 }
 
-void difftest_set_fuzz_id(uint64_t id) {
-  for (int i = 0; i < NUM_CORES; i++) {
-    difftest[i]->fuzz_id = id;
-  }
-}
-
-void difftest_dump_csr_change() {
-  for (int i = 0; i < NUM_CORES; i++) {
-    difftest[i]->dump_csr_change = true;
-  }
-}
-
 int init_nemuproxy(size_t ramsize = 0) {
   for (int i = 0; i < NUM_CORES; i++) {
     difftest[i]->update_nemuproxy(i, ramsize);
@@ -277,6 +265,29 @@ int Difftest::step(bool* stateChange) {
     return 1;
   }
   do_first_instr_commit();
+
+
+  if(run_snapshot) {
+    if(!mem_cpy && dut->commit[0].valid) {
+      uint32_t ref_instr;
+      read_goldenmem(dut->commit[0].pc, &ref_instr, 4);
+      printf("pc: 0x%016lx, ref_instr: 0x%08x, dut_instr: 0x%08x\n", dut->commit[0].pc, ref_instr, dut->commit[0].instr);
+      if(ref_instr != dut->commit[0].instr) {
+        dut->commit[0].skip = true;
+        printf("skip\n");
+      }
+      else {
+        printf("copy memory\n");
+        simMemory->clone_on_demand(
+            [this](uint64_t offset, void *src, size_t n) {
+            uint64_t dest_addr = PMEM_BASE + offset;
+            proxy->ref_memcpy(dest_addr, src, n, DUT_TO_REF);
+            },
+            true);
+        mem_cpy = true;
+      }
+    }
+  }
 
   // Each cycle is checked for an store event, and recorded in queue.
   // It is checked every time an instruction is committed and queue has content.
