@@ -56,9 +56,7 @@ extern bool sim_verbose;
 
 #define Info(...)           \
   do {                      \
-    if (sim_verbose) {      \
       eprintf(__VA_ARGS__); \
-    }                       \
   } while (0)
 
 #define Assert(cond, ...)           \
