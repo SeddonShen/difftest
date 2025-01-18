@@ -366,10 +366,10 @@ int Difftest::step(bool* stateChange) {
 
   num_commit = 0; // reset num_commit this cycle to 0
   if (dut->event.valid) {
-    printf("========================================\n");
-    proxy->ref_reg_display();
-    printf("========================================\n");
-    printf("event cycle:%lu\n", get_trap_event()->cycleCnt);
+    // printf("========================================\n");
+    // proxy->ref_reg_display();
+    // printf("========================================\n");
+    // printf("event cycle:%lu\n", get_trap_event()->cycleCnt);
     // interrupt has a higher priority than exception
     dut->event.interrupt ? do_interrupt() : do_exception();
     dut->event.valid = 0;
@@ -386,10 +386,10 @@ int Difftest::step(bool* stateChange) {
 #endif
     for (int i = 0; i < CONFIG_DIFF_COMMIT_WIDTH; i++) {
       if (dut->commit[i].valid) {
-      printf("commit cycle:%lu\n", get_trap_event()->cycleCnt);
-    printf("========================================\n");
-    proxy->ref_reg_display();
-    printf("========================================\n");
+    //   printf("commit cycle:%lu\n", get_trap_event()->cycleCnt);
+    // printf("========================================\n");
+    // proxy->ref_reg_display();
+    // printf("========================================\n");
         if (do_instr_commit(i)) {
           return 1;
         }
