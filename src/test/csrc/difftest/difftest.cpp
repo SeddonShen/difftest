@@ -273,32 +273,15 @@ int Difftest::step(bool* stateChange) {
       read_goldenmem(dut->commit[0].pc, &ref_instr, 4);
       printf("pc: 0x%016lx, ref_instr: 0x%08x, dut_instr: 0x%08x\n", dut->commit[0].pc, ref_instr, dut->commit[0].instr);
       if(ref_instr != dut->commit[0].instr) {
-        uint64_t waddr, wdata, wmask, wIdx;
-        waddr = dut->commit[0].pc-PMEM_BASE;
+        uint64_t waddr;
+        uint32_t wdata;
+        waddr = dut->commit[0].pc;
         wdata = dut->commit[0].instr;
-        wdata = (wdata<<32)|wdata;
-        wmask = (waddr % 8) ? 0xffffffff00000000 : 0x00000000ffffffff;
-        wIdx = waddr / sizeof(uint64_t);
-        printf("waddr:0x%016lx, wdata:0x%016lx, wmask:0x%016lx\n", waddr, wdata, wmask);
-        printf("before write simMemory:0x%016lx\n", simMemory->at(wIdx));
-        simMemory->at(wIdx) = (simMemory->at(wIdx) & ~wmask) | (wdata & wmask);
-        printf("after write simMemory:0x%016lx\n", simMemory->at(wIdx));
-        printf("copy memory\n");
-        simMemory->clone_on_demand(
-            [this](uint64_t offset, void *src, size_t n) {
-            uint64_t dest_addr = PMEM_BASE + offset;
-            proxy->ref_memcpy(dest_addr, src, n, DUT_TO_REF);
-            },
-            true);
+        printf("copy inst: 0x%08x to 0x%016lx\n", wdata, waddr);
+        proxy->ref_memcpy(waddr, &wdata, 4, DUT_TO_REF);
       }
       else {
-        simMemory->clone_on_demand(
-            [this](uint64_t offset, void *src, size_t n) {
-            uint64_t dest_addr = PMEM_BASE + offset;
-            proxy->ref_memcpy(dest_addr, src, n, DUT_TO_REF);
-            },
-            true);
-        printf("finish copy memory\n");
+        printf("finish copy inst\n");
         mem_cpy = true;
       }
     }

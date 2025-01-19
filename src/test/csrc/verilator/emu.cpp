@@ -1212,6 +1212,12 @@ void Emulator::snapshot_load(const char *filename) {
 //   stream.read(buf, size);
 //   proxy->ref_memcpy(PMEM_BASE, buf, size, DUT_TO_REF);
 //   munmap(buf, size);
+  simMemory->clone_on_demand(
+      [proxy](uint64_t offset, void *src, size_t n) {
+      uint64_t dest_addr = PMEM_BASE + offset;
+      proxy->ref_memcpy(dest_addr, src, n, DUT_TO_REF);
+      },
+      true);
 
 //   uint64_t csr_buf[4096];
 //   stream.read(&csr_buf, sizeof(csr_buf));
