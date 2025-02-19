@@ -36,8 +36,8 @@
 // -----------------------------------------------------------------------
 
 // emulated memory size (Byte)
-// #define DEFAULT_EMU_RAM_SIZE (8 * 1024 * 1024 * 1024UL) // 8 GB
-#define DEFAULT_EMU_RAM_SIZE (1536 * 1024 * 1024UL) // 1536 MB
+#define DEFAULT_EMU_RAM_SIZE (2 * 1024 * 1024 * 1024UL) // 2 GB
+// #define DEFAULT_EMU_RAM_SIZE (1536 * 1024 * 1024UL) // 1536 MB
 
 // physical memory base address
 #define PMEM_BASE 0x80000000UL
