@@ -69,6 +69,11 @@ SIM_CSRC_DIR = $(abspath ./src/test/csrc/common)
 SIM_CXXFILES = $(shell find $(SIM_CSRC_DIR) -name "*.cpp")
 SIM_CXXFLAGS = -I$(SIM_CSRC_DIR) -I$(SIM_CONFIG_DIR)
 
+# CPU definition
+ifneq ($(CPU),)
+SIM_CXXFLAGS += -DCPU_$(CPU)
+endif
+
 SIM_CXXFLAGS += -DNOOP_HOME=\\\"$(NOOP_HOME)\\\"
 
 # generated-src
