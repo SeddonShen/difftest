@@ -273,7 +273,7 @@ int Difftest::step(bool* stateChange) {
       read_goldenmem(dut->commit[0].pc, &ref_instr, 4);
       printf("pc: 0x%016lx, ref_instr: 0x%08x, dut_instr: 0x%08x\n", dut->commit[0].pc, ref_instr, dut->commit[0].instr);
       if((!dut->commit[0].isRVC && ref_instr != dut->commit[0].instr) ||
-         ( dut->commit[0].isRVC && ref_instr != (dut->commit[0].instr & 0xffff))) {
+         ( dut->commit[0].isRVC && (ref_instr & 0xffff) != (dut->commit[0].instr & 0xffff))) {
         uint64_t waddr;
         uint32_t wdata;
         waddr = dut->commit[0].pc;
