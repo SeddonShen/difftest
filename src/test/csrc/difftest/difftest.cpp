@@ -266,20 +266,23 @@ int Difftest::step(bool* stateChange) {
   }
   do_first_instr_commit();
 
-
-  if(run_snapshot) {
-    if(!mem_cpy && dut->commit[0].valid) {
+  if(run_snapshot && !mem_cpy) {
+    bool dut_valid = dut->commit[0].valid || dut->event.valid;
+    uint64_t dut_pc = dut->commit[0].valid ? dut->commit[0].pc : dut->event.exceptionPC;
+    uint32_t dut_instr = dut->commit[0].valid ? dut->commit[0].instr : dut->event.exceptionInst;
+    bool dut_isRVC = (dut_instr & 0x3) != 3;
+    uint32_t instr_size = dut_isRVC ? 2 : 4;
+    if(!mem_cpy && dut_valid) {
       uint32_t ref_instr;
-      read_goldenmem(dut->commit[0].pc, &ref_instr, 4);
-      printf("pc: 0x%016lx, ref_instr: 0x%08x, dut_instr: 0x%08x\n", dut->commit[0].pc, ref_instr, dut->commit[0].instr);
-      if((!dut->commit[0].isRVC && ref_instr != dut->commit[0].instr) ||
-         ( dut->commit[0].isRVC && (ref_instr & 0xffff) != (dut->commit[0].instr & 0xffff))) {
+      read_goldenmem(dut_pc, &ref_instr, instr_size);
+      printf("pc: 0x%016lx, isRVC:%s, ref_instr: 0x%08x, dut_instr: 0x%08x\n", dut_pc, dut_isRVC ? "True":"False", ref_instr, dut_instr);
+      if(ref_instr != dut_instr) {
         uint64_t waddr;
         uint32_t wdata;
         waddr = dut->commit[0].pc;
         wdata = dut->commit[0].instr;
         printf("copy inst: 0x%08x to 0x%016lx\n", wdata, waddr);
-        proxy->ref_memcpy(waddr, &wdata, 4, DUT_TO_REF);
+        proxy->ref_memcpy(waddr, &wdata, instr_size, DUT_TO_REF);
       }
       else {
         printf("finish copy inst\n");
