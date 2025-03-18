@@ -84,6 +84,7 @@ struct EmuArgs {
   uint64_t fuzz_id = 0;
   bool dump_csr_change = false;
   bool run_snapshot = false;
+  uint64_t dump_reset_cycles = 0;
 };
 
 class Emulator final : public DUT {

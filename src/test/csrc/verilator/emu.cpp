@@ -165,6 +165,7 @@ inline EmuArgs parse_args(int argc, const char *argv[]) {
     { "fuzz-id",           1, NULL,  0  },
     { "dump-csr-change",   0, NULL,  0  },
     { "run-snapshot",      0, NULL,  0  },
+    { "dump-reset-cycles", 1, NULL,  0  },
     { "seed",              1, NULL, 's' },
     { "max-cycles",        1, NULL, 'C' },
     { "fork-interval",     1, NULL, 'X' },
@@ -265,6 +266,7 @@ inline EmuArgs parse_args(int argc, const char *argv[]) {
           case 26: args.fuzz_id = atoll_strict(optarg, "fuzz-id"); continue;
           case 27: args.dump_csr_change = true; continue;
           case 28: args.run_snapshot = true; continue;
+          case 29: args.dump_reset_cycles = atoll_strict(optarg, "dump-reset-cycles"); continue;
         }
         // fall through
       default: print_help(argv[0]); exit(0);
@@ -632,6 +634,19 @@ inline void Emulator::reset_ncycles(size_t cycles) {
 inline void Emulator::single_cycle() {
   if (args.trace_name && args.trace_is_read) {
     goto end_single_cycle;
+  }
+
+//   printf("cycle: %lu\n", cycles);
+  if (args.dump_reset_cycles != 0 && cycles == args.dump_reset_cycles) {
+    printf("dump reset snapshot at cycle %d\n", cycles);
+
+    tfp_stateChange = new VerilatedVcdC;
+    dut_ptr->trace(tfp_stateChange, 99);
+    tfp_stateChange->open(csr_wave_filename(cycles));
+    tfp_stateChange->dump(cycles);
+    tfp_stateChange->close();
+
+    snapshot_save(csr_snapshot_filename());
   }
 
   dut_ptr->clock = 1;
