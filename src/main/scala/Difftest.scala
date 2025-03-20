@@ -262,6 +262,12 @@ class DiffCSRState extends CSRState with DifftestBundle {
   override val updateDependency: Seq[String] = Seq("commit", "event")
 }
 
+class DiffSnapshotCSRState extends SnapshotCSRState with DifftestBundle {
+  override val desiredCppName: String = "snapshotcsr"
+  override val desiredOffset: Int = 6
+  override val updateDependency: Seq[String] = Seq("commit", "event")
+}
+
 class DiffHCSRState extends HCSRState with DifftestBundle {
   override val desiredCppName: String = "hcsr"
   override val desiredOffset: Int = 6

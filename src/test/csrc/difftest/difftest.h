@@ -228,6 +228,7 @@ public:
   bool dump_csr_change = false;
   bool run_snapshot = false;
   bool mem_cpy = false;
+  bool csr_cpy = false;
 
   void display();
   void display_stats();

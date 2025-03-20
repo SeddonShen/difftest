@@ -266,13 +266,17 @@ int Difftest::step(bool* stateChange) {
   }
   do_first_instr_commit();
 
-  if(run_snapshot && !mem_cpy) {
+  if(run_snapshot) {
     bool dut_valid = dut->commit[0].valid || dut->event.valid;
-    uint64_t dut_pc = dut->commit[0].valid ? dut->commit[0].pc : dut->event.exceptionPC;
-    uint32_t dut_instr = dut->commit[0].valid ? dut->commit[0].instr : dut->event.exceptionInst;
-    bool dut_isRVC = (dut_instr & 0x3) != 3;
-    uint32_t instr_size = dut_isRVC ? 2 : 4;
+    if(!csr_cpy && dut_valid) {
+      proxy->ref_csrcpy(&dut->snapshotcsr, DUT_TO_REF);
+      csr_cpy = true;
+    }
     if(!mem_cpy && dut_valid) {
+      uint64_t dut_pc = dut->commit[0].valid ? dut->commit[0].pc : dut->event.exceptionPC;
+      uint32_t dut_instr = dut->commit[0].valid ? dut->commit[0].instr : dut->event.exceptionInst;
+      bool dut_isRVC = (dut_instr & 0x3) != 3;
+      uint32_t instr_size = dut_isRVC ? 2 : 4;
       uint32_t ref_instr;
       read_goldenmem(dut_pc, &ref_instr, instr_size);
       printf("pc: 0x%016lx, isRVC:%s, ref_instr: 0x%08x, dut_instr: 0x%08x\n", dut_pc, dut_isRVC ? "True":"False", ref_instr, dut_instr);

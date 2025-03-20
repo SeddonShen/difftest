@@ -126,6 +126,11 @@ class CSRState extends DifftestBaseBundle {
   def =/=(that: CSRState): Bool = VecInit(toSeq.zip(that.toSeq).map(v => v._1 =/= v._2)).asUInt.orR
 }
 
+class SnapshotCSRState extends DifftestBaseBundle {
+  val minstret = UInt(64.W)
+  val mcycle = UInt(64.W)
+}
+
 class HCSRState extends DifftestBaseBundle {
   val virtMode = UInt(64.W)
   val mtval2 = UInt(64.W)
