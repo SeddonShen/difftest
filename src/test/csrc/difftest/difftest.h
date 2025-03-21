@@ -23,6 +23,8 @@
 #include "refproxy.h"
 #include <queue>
 #include <vector>
+#include <array>
+#include <set>
 #ifdef FUZZING
 #include "emu.h"
 #endif // FUZZING
@@ -226,6 +228,7 @@ public:
   // snapshot fuzz
   uint64_t fuzz_id = 0;
   bool dump_csr_change = false;
+  std::set<std::array<uint64_t,6>> csr_change_map;
   bool run_snapshot = false;
   bool mem_cpy = false;
   bool csr_cpy = false;

@@ -638,7 +638,7 @@ inline void Emulator::single_cycle() {
 
 //   printf("cycle: %lu\n", cycles);
   if (args.dump_reset_cycles != 0 && cycles == args.dump_reset_cycles) {
-    printf("dump reset snapshot at cycle %d\n", cycles);
+    printf("dump reset snapshot at cycle %lu\n", cycles);
 
     tfp_stateChange = new VerilatedVcdC;
     dut_ptr->trace(tfp_stateChange, 99);

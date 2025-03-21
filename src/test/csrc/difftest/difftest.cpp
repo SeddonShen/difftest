@@ -448,13 +448,17 @@ int Difftest::step(bool* stateChange) {
     csr_init = true;
   }
 
-  bool privChange = privilegeMode_p != dut->csr.privilegeMode;
-  bool mstatusChange = mstatus_p != dut->csr.mstatus;
-  bool satChange = sat_p != dut->csr.satp;
-  bool medelegChange = medeleg_p != dut->csr.medeleg;
-
   if(dump_csr_change) {
-    if(privChange || mstatusChange || satChange || medelegChange){
+    bool privChange = privilegeMode_p != dut->csr.privilegeMode;
+    bool mstatusChange = mstatus_p != dut->csr.mstatus;
+    bool satChange = sat_p != dut->csr.satp;
+    bool medelegChange = medeleg_p != dut->csr.medeleg;
+    bool csr_change = privChange || mstatusChange || satChange || medelegChange;
+    std::array<uint64_t, 6> csr_transition = {privilegeMode_p, dut->csr.privilegeMode,
+                                        mstatus_p, dut->csr.mstatus,
+                                        sat_p, dut->csr.satp};
+    if(csr_change && !csr_change_map.count(csr_transition)) {
+        csr_change_map.insert(csr_transition);
         *stateChange = true;
         printf("privChange: %d, mstatusChange: %d, satChange: %d, medelegChange: %d\n", privChange, mstatusChange, satChange, medelegChange);
         const char *noop_home_dir = getenv("NOOP_HOME");
