@@ -191,13 +191,13 @@ SIM_CXXFLAGS += -I$(abspath $(PLUGIN_CSRC_DIR)/runahead)
 SIM_CXXFILES += $(shell find $(PLUGIN_CSRC_DIR)/runahead -name "*.cpp")
 endif
 
-# Check if XFUZZ is set
-ifeq ($(XFUZZ), 1)
-XFUZZ_HOME_VAR = XFUZZ_HOME
-ifeq ($(origin $(XFUZZ_HOME_VAR)), undefined)
-$(error $(XFUZZ_HOME_VAR) is not set)
+# Check if BMCFUZZ is set
+ifeq ($(BMCFUZZ), 1)
+BMCFUZZ_HOME_VAR = BMCFUZZ_HOME
+ifeq ($(origin $(BMCFUZZ_HOME_VAR)), undefined)
+$(error $(BMCFUZZ_HOME_VAR) is not set)
 endif
-FUZZER_LIB   = $(shell echo $$$(XFUZZ_HOME_VAR))/target/release/libfuzzer.a
+FUZZER_LIB   = $(shell echo $$$(BMCFUZZ_HOME_VAR))/target/release/libfuzzer.a
 SIM_LDFLAGS += -lrt -lpthread
 endif
 
