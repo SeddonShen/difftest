@@ -281,12 +281,8 @@ int Difftest::step(bool* stateChange) {
       read_goldenmem(dut_pc, &ref_instr, instr_size);
       printf("pc: 0x%016lx, isRVC:%s, ref_instr: 0x%08x, dut_instr: 0x%08x\n", dut_pc, dut_isRVC ? "True":"False", ref_instr, dut_instr);
       if(ref_instr != dut_instr) {
-        uint64_t waddr;
-        uint32_t wdata;
-        waddr = dut->commit[0].pc;
-        wdata = dut->commit[0].instr;
-        printf("copy inst: 0x%08x to 0x%016lx\n", wdata, waddr);
-        proxy->ref_memcpy(waddr, &wdata, instr_size, DUT_TO_REF);
+        printf("copy inst: 0x%08x to 0x%016lx\n", dut_instr, dut_pc);
+        proxy->ref_memcpy(dut_pc, &dut_instr, instr_size, DUT_TO_REF);
       }
       else {
         printf("finish copy inst\n");
