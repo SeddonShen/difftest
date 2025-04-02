@@ -130,6 +130,10 @@ public:
     printf("write not support by SimMemory\n");
     // assert(0);
   }
+  void step() {
+    printf("step not support by SimMemory\n");
+    // assert(0);
+  }
 };
 
 class MmapMemory : public SimMemory {
@@ -162,7 +166,7 @@ public:
 };
 
 class MmapMemoryWithFootprints : public MmapMemory {
-private:
+protected:
   uint8_t *touched;
   std::ofstream footprints_file;
 
@@ -175,6 +179,22 @@ public:
     printf("write flag %lx to footprints\n", data);
     footprints_file.write(reinterpret_cast<const char *>(&data), sizeof(data));
   }
+};
+
+class WitnessMemoryWithFootprints : public MmapMemoryWithFootprints {
+private:
+    uint64_t witness_step;
+    uint64_t total_steps;
+    uint64_t *step_data;
+public:
+    WitnessMemoryWithFootprints(const char *image, uint64_t n_bytes, const char *footprints_name);
+    ~WitnessMemoryWithFootprints();
+    uint64_t &at(uint64_t index);
+
+    void step() {
+        witness_step += 1;
+        // printf("witness step %lu\n", witness_step);
+    }
 };
 
 class FootprintsMemory : public SimMemory {

@@ -85,6 +85,7 @@ struct EmuArgs {
   bool dump_csr_change = false;
   bool run_snapshot = false;
   uint64_t dump_reset_cycles = 0;
+  bool image_as_witness = false;
 };
 
 class Emulator final : public DUT {

@@ -166,6 +166,7 @@ inline EmuArgs parse_args(int argc, const char *argv[]) {
     { "dump-csr-change",   0, NULL,  0  },
     { "run-snapshot",      0, NULL,  0  },
     { "dump-reset-cycles", 1, NULL,  0  },
+    { "as-witness",        0, NULL,  0  },
     { "seed",              1, NULL, 's' },
     { "max-cycles",        1, NULL, 'C' },
     { "fork-interval",     1, NULL, 'X' },
@@ -267,6 +268,7 @@ inline EmuArgs parse_args(int argc, const char *argv[]) {
           case 27: args.dump_csr_change = true; continue;
           case 28: args.run_snapshot = true; continue;
           case 29: args.dump_reset_cycles = atoll_strict(optarg, "dump-reset-cycles"); continue;
+          case 30: args.image_as_witness = true; continue;
         }
         // fall through
       default: print_help(argv[0]); exit(0);
@@ -411,6 +413,9 @@ Emulator::Emulator(int argc, const char *argv[])
     }
   }
   // normal linear memory
+  else if (args.image_as_witness) {
+    simMemory = new WitnessMemoryWithFootprints(args.image, ram_size, args.footprints_name);
+  }
   else {
     if (args.footprints_name) {
       simMemory = new MmapMemoryWithFootprints(args.image, ram_size, args.footprints_name);
@@ -479,7 +484,9 @@ Emulator::Emulator(int argc, const char *argv[])
   snapshot_slot = new VerilatedSaveMem[2];
   if (args.snapshot_path != NULL) {
     Info("loading from snapshot `%s`...\n", args.snapshot_path);
-    snapshot_load(args.snapshot_path);
+    if (args.enable_diff) {
+        snapshot_load(args.snapshot_path);
+    }
     auto cycleCnt = difftest[0]->get_trap_event()->cycleCnt;
     Info("model cycleCnt = %" PRIu64 "\n", cycleCnt);
   }
@@ -738,6 +745,10 @@ inline void Emulator::single_cycle() {
 
 end_single_cycle:
   cycles++;
+  if (args.image_as_witness) {
+    WitnessMemoryWithFootprints *witnessMemory = (WitnessMemoryWithFootprints *)simMemory;
+    witnessMemory->step();
+  }
 }
 
 int Emulator::tick() {

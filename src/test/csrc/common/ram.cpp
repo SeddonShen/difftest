@@ -18,6 +18,7 @@
 #include "common.h"
 #include "compress.h"
 #include <iostream>
+#include <cstdio>
 #include <sys/mman.h>
 #ifdef CONFIG_DIFFTEST_PERFCNT
 #include "perf.h"
@@ -371,6 +372,42 @@ uint64_t &MmapMemoryWithFootprints::at(uint64_t index) {
     touched[index] = 1;
   }
   return data;
+}
+
+WitnessMemoryWithFootprints::WitnessMemoryWithFootprints(const char *witness, uint64_t n_bytes, const char *footprints_name)
+    : MmapMemoryWithFootprints(nullptr, n_bytes, footprints_name){
+    witness_step = 0;
+    FILE * fp = fopen(witness, "r");
+    assert(fp != NULL);
+    fscanf(fp, "%lu", &total_steps);
+    printf("total steps: %lu\n", total_steps);
+    step_data = (uint64_t *)malloc(sizeof(uint64_t) * (total_steps+1));
+    assert(step_data != NULL);
+    for (uint64_t i = 1; i <= total_steps; i++) {
+        fscanf(fp, "%lx", &step_data[i]);
+        if (step_data[i])
+            printf("step_data[%lu]: %016lx\n", i, step_data[i]);
+    }
+    fclose(fp);
+}
+
+WitnessMemoryWithFootprints::~WitnessMemoryWithFootprints() {
+    printf("close footprint file\n");
+    munmap(touched, memory_size / sizeof(uint64_t));
+    footprints_file.close();
+    free(step_data);
+}
+
+uint64_t &WitnessMemoryWithFootprints::at(uint64_t index) {
+    uint64_t &data = MmapMemory::at(index);
+    if (!touched[index]) {
+        if (witness_step <= total_steps)
+            data = step_data[witness_step];
+        printf("use step_data[%lu] = %016lx\n", witness_step, data);
+        footprints_file.write(reinterpret_cast<const char *>(&data), sizeof(data));
+        touched[index] = 1;
+    }
+    return data;
 }
 
 FootprintsMemory::FootprintsMemory(const char *footprints_name, uint64_t n_bytes)
