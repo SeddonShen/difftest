@@ -385,8 +385,7 @@ WitnessMemoryWithFootprints::WitnessMemoryWithFootprints(const char *witness, ui
     assert(step_data != NULL);
     for (uint64_t i = 1; i <= total_steps; i++) {
         fscanf(fp, "%lx", &step_data[i]);
-        if (step_data[i])
-            printf("step_data[%lu]: %016lx\n", i, step_data[i]);
+        printf("step_data[%lu]: %016lx\n", i, step_data[i]);
     }
     fclose(fp);
 }
