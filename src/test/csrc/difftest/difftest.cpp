@@ -286,12 +286,6 @@ int Difftest::step(bool* stateChange) {
                 proxy->ref_memcpy(dut_pc, &dut_instr, instr_size, DUT_TO_REF);
             }
             else {
-                simMemory->clone_on_demand(
-                    [this](uint64_t offset, void *src, size_t n) {
-                        uint64_t dest_addr = PMEM_BASE + offset;
-                        proxy->ref_memcpy(dest_addr, src, n, DUT_TO_REF);
-                    }
-                );
                 printf("finish copy inst\n");
                 mem_cpy = true;
             }
