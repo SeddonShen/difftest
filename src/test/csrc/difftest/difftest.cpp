@@ -293,9 +293,11 @@ int Difftest::step(bool* stateChange) {
                 printf("Skip residual instructions in dut.\n");
                 dut->event.valid = 0;
                 dut->commit[i].valid = 0;
+                proxy->regcpy(dut, false);
             }
             else {
-                proxy->regcpy(dut, false);
+                proxy->pc = dut_pc;
+                proxy->ref_regcpy(&proxy->regs_int, DUT_TO_REF, false);
                 printf("Inst sync finished\n");
                 mem_cpy = true;
                 has_commit = true;
