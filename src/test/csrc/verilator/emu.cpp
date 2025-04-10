@@ -466,6 +466,15 @@ Emulator::Emulator(int argc, const char *argv[])
     init_goldenmem();
     size_t ref_ramsize = args.ram_size ? simMemory->get_size() : 0;
     init_nemuproxy(ref_ramsize);
+    if (args.run_snapshot) {
+        auto proxy = difftest[0]->proxy;
+        simMemory->clone_on_demand(
+            [proxy](uint64_t offset, void *src, size_t n) {
+            uint64_t dest_addr = PMEM_BASE + offset;
+            proxy->ref_memcpy(dest_addr, src, n, DUT_TO_REF);
+            },
+            true);
+    }
   }
 #endif // CONFIG_NO_DIFFTEST
 #ifdef ENABLE_RUNAHEAD

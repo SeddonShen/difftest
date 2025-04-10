@@ -277,6 +277,8 @@ int Difftest::step(bool* stateChange) {
             uint64_t dut_pc = dut->commit[i].valid ? dut->commit[i].pc : dut->event.exceptionPC;
             uint32_t dut_instr = dut->commit[i].valid ? dut->commit[i].instr : dut->event.exceptionInst;
             bool dut_isRVC = (dut_instr & 0x3) != 3;
+            if (dut_isRVC)
+                dut_instr = dut_instr & 0xffff;
             uint32_t instr_size = dut_isRVC ? 2 : 4;
             uint32_t ref_instr;
             read_goldenmem(dut_pc, &ref_instr, instr_size);
