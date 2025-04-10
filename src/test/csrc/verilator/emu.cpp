@@ -484,9 +484,9 @@ Emulator::Emulator(int argc, const char *argv[])
   snapshot_slot = new VerilatedSaveMem[2];
   if (args.snapshot_path != NULL) {
     Info("loading from snapshot `%s`...\n", args.snapshot_path);
-    if (args.enable_diff) {
-        snapshot_load(args.snapshot_path);
-    }
+    // if (args.enable_diff) {
+    //     snapshot_load(args.snapshot_path);
+    // }
     auto cycleCnt = difftest[0]->get_trap_event()->cycleCnt;
     Info("model cycleCnt = %" PRIu64 "\n", cycleCnt);
   }
@@ -652,6 +652,13 @@ inline void Emulator::single_cycle() {
     tfp_stateChange->open(csr_wave_filename(cycles));
     tfp_stateChange->dump(cycles);
     tfp_stateChange->close();
+
+    auto dut = difftest[0]->dut;
+    auto proxy = difftest[0]->proxy;
+    uint64_t dut_this_pc = dut->commit[0].pc;
+    dut->commit[0].pc = 0x80000000;
+    proxy->regcpy(dut);
+    dut->commit[0].pc = dut_this_pc;
 
     snapshot_save(csr_snapshot_filename());
   }

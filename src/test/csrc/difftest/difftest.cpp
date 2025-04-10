@@ -280,15 +280,25 @@ int Difftest::step(bool* stateChange) {
             uint32_t instr_size = dut_isRVC ? 2 : 4;
             uint32_t ref_instr;
             read_goldenmem(dut_pc, &ref_instr, instr_size);
-            printf("pc: 0x%016lx, isRVC:%s, ref_instr: 0x%08x, dut_instr: 0x%08x\n", dut_pc, dut_isRVC ? "True":"False", ref_instr, dut_instr);
+            printf("%s pc: 0x%016lx, isRVC:%s, ref_instr: 0x%08x, dut_instr: 0x%08x\n", dut->commit[i].valid ? "commit":"event"
+                                                                                      , dut_pc
+                                                                                      , dut_isRVC ? "True":"False"
+                                                                                      , ref_instr
+                                                                                      , dut_instr);
             if(ref_instr != dut_instr) {
-                printf("copy inst: 0x%08x to 0x%016lx\n", dut_instr, dut_pc);
-                proxy->ref_memcpy(dut_pc, &dut_instr, instr_size, DUT_TO_REF);
+                // printf("copy inst: 0x%08x to 0x%016lx\n", dut_instr, dut_pc);
+                // proxy->ref_memcpy(dut_pc, &dut_instr, instr_size, DUT_TO_REF);
+                printf("Skip residual instructions in dut.\n");
+                dut->event.valid = 0;
+                dut->commit[i].valid = 0;
             }
             else {
-                printf("finish copy inst\n");
+                proxy->regcpy(dut, false);
+                printf("Inst sync finished\n");
                 mem_cpy = true;
+                has_commit = true;
             }
+            // fflush(stdout);
         }
     }
   }

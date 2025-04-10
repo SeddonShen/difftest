@@ -207,7 +207,7 @@ public:
     ref_regcpy(&regs_int, is_from_dut, is_from_dut);
   }
 
-  void regcpy(DiffTestState *dut);
+  void regcpy(DiffTestState *dut, bool zero_int = true);
   int compare(DiffTestState *dut);
   void display(DiffTestState *dut = nullptr);
 
