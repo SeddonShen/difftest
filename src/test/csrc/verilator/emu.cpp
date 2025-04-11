@@ -466,15 +466,15 @@ Emulator::Emulator(int argc, const char *argv[])
     init_goldenmem();
     size_t ref_ramsize = args.ram_size ? simMemory->get_size() : 0;
     init_nemuproxy(ref_ramsize);
-    if (args.run_snapshot) {
-        auto proxy = difftest[0]->proxy;
-        simMemory->clone_on_demand(
-            [proxy](uint64_t offset, void *src, size_t n) {
-            uint64_t dest_addr = PMEM_BASE + offset;
-            proxy->ref_memcpy(dest_addr, src, n, DUT_TO_REF);
-            },
-            true);
-    }
+    // if (args.run_snapshot) {
+    //     auto proxy = difftest[0]->proxy;
+    //     simMemory->clone_on_demand(
+    //         [proxy](uint64_t offset, void *src, size_t n) {
+    //         uint64_t dest_addr = PMEM_BASE + offset;
+    //         proxy->ref_memcpy(dest_addr, src, n, DUT_TO_REF);
+    //         },
+    //         true);
+    // }
   }
 #endif // CONFIG_NO_DIFFTEST
 #ifdef ENABLE_RUNAHEAD
@@ -493,9 +493,9 @@ Emulator::Emulator(int argc, const char *argv[])
   snapshot_slot = new VerilatedSaveMem[2];
   if (args.snapshot_path != NULL) {
     Info("loading from snapshot `%s`...\n", args.snapshot_path);
-    // if (args.enable_diff) {
-    //     snapshot_load(args.snapshot_path);
-    // }
+    if (args.enable_diff) {
+        snapshot_load(args.snapshot_path);
+    }
     auto cycleCnt = difftest[0]->get_trap_event()->cycleCnt;
     Info("model cycleCnt = %" PRIu64 "\n", cycleCnt);
   }

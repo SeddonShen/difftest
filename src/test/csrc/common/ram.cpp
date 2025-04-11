@@ -402,10 +402,11 @@ uint64_t &WitnessMemoryWithFootprints::at(uint64_t index) {
     if (!touched[index]) {
         if (witness_step <= total_steps)
             data = step_data[witness_step];
-        printf("use step_data[%lu] = %016lx\n", witness_step, data);
+        printf("addr:0x%lx use step_data[%lu] = %016lx\n", index*sizeof(uint64_t), witness_step, data);
         footprints_file.write(reinterpret_cast<const char *>(&data), sizeof(data));
         touched[index] = 1;
     }
+    printf("addr:0x%lx data:0x%016lx\n", index*sizeof(uint64_t), data);
     return data;
 }
 
@@ -423,6 +424,7 @@ uint64_t &FootprintsMemory::at(uint64_t index) {
   if (ram.find(index) == ram.end()) {
     uint64_t value = reader->next();
     ram[index] = value;
+    // printf("addr:0x%016lx data:0x%016lx\n", index * sizeof(uint64_t), value);
     for (auto &cb: callbacks) {
       cb(index, value);
     }
