@@ -666,7 +666,7 @@ inline void Emulator::single_cycle() {
     auto proxy = difftest[0]->proxy;
     uint64_t dut_this_pc = dut->commit[0].pc;
     dut->commit[0].pc = 0x80000000;
-    proxy->regcpy(dut);
+    proxy->regcpy(dut, false);
     dut->commit[0].pc = dut_this_pc;
 
     snapshot_save(csr_snapshot_filename());
