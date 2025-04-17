@@ -368,9 +368,11 @@ MmapMemoryWithFootprints::~MmapMemoryWithFootprints() {
 uint64_t &MmapMemoryWithFootprints::at(uint64_t index) {
   uint64_t &data = MmapMemory::at(index);
   if (!touched[index]) {
+    // printf("[new] addr:0x%016lx data:0x%016lx\n", index * sizeof(uint64_t), data);
     footprints_file.write(reinterpret_cast<const char *>(&data), sizeof(data));
     touched[index] = 1;
   }
+//   printf("addr:0x%016lx data:0x%016lx\n", index * sizeof(uint64_t), data);
   return data;
 }
 
@@ -410,6 +412,58 @@ uint64_t &WitnessMemoryWithFootprints::at(uint64_t index) {
     return data;
 }
 
+WitnessMemoryWithLinearizedMemory::WitnessMemoryWithLinearizedMemory(const char *witness, uint64_t n_bytes,
+                                                                     const char *linear_name)
+    : MmapMemory(nullptr, n_bytes), linear_name(linear_name) {
+    witness_step = 0;
+    FILE * fp = fopen(witness, "r");
+    assert(fp != NULL);
+    fscanf(fp, "%lu", &total_steps);
+    printf("total steps: %lu\n", total_steps);
+    step_data = (uint64_t *)malloc(sizeof(uint64_t) * (total_steps+1));
+    assert(step_data != NULL);
+    for (uint64_t i = 1; i <= total_steps; i++) {
+        fscanf(fp, "%lx", &step_data[i]);
+        printf("step_data[%lu]: %016lx\n", i, step_data[i]);
+    }
+    fclose(fp);
+}
+
+WitnessMemoryWithLinearizedMemory::~WitnessMemoryWithLinearizedMemory() {
+    printf("dump Linearized memory to %s\n", linear_name);
+    FILE * fp = fopen(linear_name, "wb");
+    assert(fp != NULL);
+    uint64_t current_addr = 0;
+    for(auto index : witness_indices) {
+        uint64_t addr = index * sizeof(uint64_t);
+        uint64_t data = ram[addr];
+        for (uint64_t i = current_addr; i < addr; i += sizeof(uint64_t)) {
+            uint64_t zero = 0;
+            fwrite(&zero, sizeof(uint64_t), 1, fp);
+        }
+        if (current_addr < addr) {
+            printf("Filling gap of %lu bytes from %016lx to %016lx\n", addr - current_addr, current_addr, addr);
+        }
+        printf("Linearized Memory write addr:0x%016lx data:0x%016lx\n", addr, data);
+        fwrite(&data, sizeof(uint64_t), 1, fp);
+        current_addr = addr + sizeof(uint64_t);
+    }
+    fclose(fp);
+}
+
+uint64_t &WitnessMemoryWithLinearizedMemory::at(uint64_t index) {
+    uint64_t &data = MmapMemory::at(index);
+    uint64_t addr = index * sizeof(uint64_t);
+    if (!ram.count(addr)) {
+        if (witness_step <= total_steps)
+            data = step_data[witness_step];
+        printf("addr:0x%lx use step_data[%lu] = %016lx\n", addr, witness_step, data);
+        ram[addr] = data;
+        witness_indices.insert(index);
+    }
+    return data;
+}
+
 FootprintsMemory::FootprintsMemory(const char *footprints_name, uint64_t n_bytes)
     : SimMemory(n_bytes), reader(createInputReader(footprints_name)), n_accessed(0) {
   printf("The image is %s\n", footprints_name);
@@ -424,12 +478,13 @@ uint64_t &FootprintsMemory::at(uint64_t index) {
   if (ram.find(index) == ram.end()) {
     uint64_t value = reader->next();
     ram[index] = value;
-    // printf("addr:0x%016lx data:0x%016lx\n", index * sizeof(uint64_t), value);
+    // printf("[new] addr:0x%016lx data:0x%016lx\n", index * sizeof(uint64_t), value);
     for (auto &cb: callbacks) {
       cb(index, value);
     }
     n_accessed += sizeof(uint64_t);
   }
+//   printf("addr:0x%016lx data:0x%016lx\n", index * sizeof(uint64_t), ram[index]);
   return ram[index];
 }
 

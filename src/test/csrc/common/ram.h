@@ -154,9 +154,8 @@ public:
     func(ram, n_bytes);
   }
   uint64_t &at(uint64_t index) {
-    // printf("addr: 0x%016lx\n", index*8);
-    // printf("data: 0x%016lx\n", ram[index]);
     on_access(index);
+    // printf("addr:0x%016lx data:0x%016lx\n", index * sizeof(uint64_t), ram[index]);
     return ram[index];
   }
 
@@ -189,6 +188,25 @@ private:
 public:
     WitnessMemoryWithFootprints(const char *image, uint64_t n_bytes, const char *footprints_name);
     ~WitnessMemoryWithFootprints();
+    uint64_t &at(uint64_t index);
+
+    void step() {
+        witness_step += 1;
+        // printf("witness step %lu\n", witness_step);
+    }
+};
+
+class WitnessMemoryWithLinearizedMemory: public MmapMemory {
+private:
+    uint64_t witness_step;
+    uint64_t total_steps;
+    uint64_t *step_data;
+    std::set<uint64_t> witness_indices;
+    std::unordered_map<uint64_t, uint64_t> ram;
+    const char *linear_name;
+public:
+    WitnessMemoryWithLinearizedMemory(const char *witness, uint64_t n_bytes, const char *linear_name);
+    ~WitnessMemoryWithLinearizedMemory();
     uint64_t &at(uint64_t index);
 
     void step() {

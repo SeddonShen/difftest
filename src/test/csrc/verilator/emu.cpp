@@ -414,7 +414,12 @@ Emulator::Emulator(int argc, const char *argv[])
   }
   // normal linear memory
   else if (args.image_as_witness) {
-    simMemory = new WitnessMemoryWithFootprints(args.image, ram_size, args.footprints_name);
+    if (args.footprints_name) {
+        simMemory = new WitnessMemoryWithFootprints(args.image, ram_size, args.footprints_name);
+    }
+    else if (args.linearized_name) {
+        simMemory = new WitnessMemoryWithLinearizedMemory(args.image, ram_size, args.linearized_name);
+    }
   }
   else {
     if (args.footprints_name) {
@@ -762,8 +767,13 @@ inline void Emulator::single_cycle() {
 end_single_cycle:
   cycles++;
   if (args.image_as_witness) {
-    WitnessMemoryWithFootprints *witnessMemory = (WitnessMemoryWithFootprints *)simMemory;
-    witnessMemory->step();
+    if (args.linearized_name) {
+      WitnessMemoryWithLinearizedMemory *witnessMemory = (WitnessMemoryWithLinearizedMemory *)simMemory;
+      witnessMemory->step();
+    } else if (args.footprints_name) {
+      WitnessMemoryWithFootprints *witnessMemory = (WitnessMemoryWithFootprints *)simMemory;
+      witnessMemory->step();
+    }
   }
 }
 
