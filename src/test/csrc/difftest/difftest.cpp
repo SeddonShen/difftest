@@ -368,6 +368,8 @@ int Difftest::step(bool* stateChange) {
 #endif
 
   num_commit = 0; // reset num_commit this cycle to 0
+  static uint64_t pre_npc = 0x10000000;
+  bool ignore_pre_npc = true;
   if (dut->event.valid) {
     // printf("========================================\n");
     // proxy->ref_reg_display();
@@ -389,10 +391,18 @@ int Difftest::step(bool* stateChange) {
 #endif
     for (int i = 0; i < CONFIG_DIFF_COMMIT_WIDTH; i++) {
       if (dut->commit[i].valid) {
-    //   printf("commit cycle:%lu\n", get_trap_event()->cycleCnt);
-    // printf("========================================\n");
-    // proxy->ref_reg_display();
-    // printf("========================================\n");
+        // printf("commit cycle:%lu\n", get_trap_event()->cycleCnt);
+        // printf("commmit inst pc: 0x%016lx, npc:0x%016lx, inst: 0x%08x, isRVC: %s\n", dut->commit[i].pc, dut->commit[i].npc, dut->commit[i].instr, (dut->commit[i].isRVC) ? "True" : "False");
+        // printf("========================================\n");
+        // proxy->ref_reg_display();
+        // printf("========================================\n");
+        if (!ignore_pre_npc && dut->commit[i].pc != pre_npc) {
+            printf("Error: commit pc mismatch, dut: 0x%016lx, pre: 0x%016lx\n", dut->commit[i].pc, pre_npc);
+            proxy->ref_reg_display();
+            return 1;
+        }
+        ignore_pre_npc = false;
+        pre_npc = dut->commit[i].npc;
         if (do_instr_commit(i)) {
           return 1;
         }
