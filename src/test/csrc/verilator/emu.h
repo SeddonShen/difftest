@@ -81,6 +81,7 @@ struct EmuArgs {
   bool dump_coverage = false;
   bool image_as_footprints = false;
   bool overwrite_nbytes_autoset = false;
+  uint32_t formal_select = 0;
 };
 
 class Emulator final : public DUT {

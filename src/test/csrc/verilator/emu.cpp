@@ -380,7 +380,7 @@ Emulator::Emulator(int argc, const char *argv[])
     }
   }
 #endif
-
+  dut_ptr->io_select = args.log_begin;
   // init core
   reset_ncycles(args.reset_cycles);
 
