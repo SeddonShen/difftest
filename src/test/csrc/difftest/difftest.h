@@ -233,6 +233,12 @@ public:
   bool mem_cpy = false;
   bool csr_cpy = false;
 
+  // for next_pc check
+  uint64_t pre_npc = 0x10000000;
+  uint64_t pre_mepc = 0x0;
+  uint64_t pre_sepc = 0x0;
+  bool ignore_pre_npc = false;
+
   void display();
   void display_stats();
 

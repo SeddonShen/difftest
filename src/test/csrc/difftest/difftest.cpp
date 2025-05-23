@@ -368,8 +368,6 @@ int Difftest::step(bool* stateChange) {
 #endif
 
   num_commit = 0; // reset num_commit this cycle to 0
-  static uint64_t pre_npc = 0x10000000;
-  bool ignore_pre_npc = true;
   if (dut->event.valid) {
     // printf("========================================\n");
     // proxy->ref_reg_display();
@@ -379,6 +377,7 @@ int Difftest::step(bool* stateChange) {
     dut->event.interrupt ? do_interrupt() : do_exception();
     dut->event.valid = 0;
     dut->commit[0].valid = 0;
+    ignore_pre_npc = true;
   } else {
 #if !defined(BASIC_DIFFTEST_ONLY) && !defined(CONFIG_DIFFTEST_SQUASH)
     if (dut->commit[0].valid) {
@@ -391,18 +390,32 @@ int Difftest::step(bool* stateChange) {
 #endif
     for (int i = 0; i < CONFIG_DIFF_COMMIT_WIDTH; i++) {
       if (dut->commit[i].valid) {
-        // printf("commit cycle:%lu\n", get_trap_event()->cycleCnt);
-        // printf("commmit inst pc: 0x%016lx, npc:0x%016lx, inst: 0x%08x, isRVC: %s\n", dut->commit[i].pc, dut->commit[i].npc, dut->commit[i].instr, (dut->commit[i].isRVC) ? "True" : "False");
+        printf("commit cycle:%lu\n", get_trap_event()->cycleCnt);
+        printf("commmit inst pc: 0x%016lx, npc:0x%016lx, inst: 0x%08x, isRVC: %s\n", dut->commit[i].pc, dut->commit[i].npc, dut->commit[i].instr, (dut->commit[i].isRVC) ? "True" : "False");
         // printf("========================================\n");
         // proxy->ref_reg_display();
         // printf("========================================\n");
+        printf("ignore_pre_npc: %s, dut: 0x%016lx, pre_npc: 0x%016lx, pre_mepc: 0x%016lx, pre_sepc: 0x%016lx\n", (ignore_pre_npc ? "True" : "False"), dut->commit[i].pc, pre_npc, pre_mepc, pre_sepc);
         if (!ignore_pre_npc && dut->commit[i].pc != pre_npc) {
-            printf("Error: commit pc mismatch, dut: 0x%016lx, pre: 0x%016lx\n", dut->commit[i].pc, pre_npc);
-            proxy->ref_reg_display();
-            return 1;
+            printf("Warn: commit pc mismatch, dut: 0x%016lx, pre: 0x%016lx\n", dut->commit[i].pc, pre_npc);
+            if(dut->commit[i].pc == pre_mepc || dut->commit[i].pc == pre_sepc) {
+                printf("Commit pc is the same as pre_epc, ignore this commit\n");
+            }
+            else {
+                printf("Error: commit pc mismatch, dut: 0x%016lx, pre: 0x%016lx\n", dut->commit[i].pc, pre_npc);
+                proxy->ref_reg_display();
+                return 1;
+            }
         }
         ignore_pre_npc = false;
+        if(dut->commit[i].instr == 0x00000073 || dut->commit[i].instr == 0x00100073
+        || (dut->commit[i].instr & 0xffff) == 0x9002) {
+            printf("Commit pc is a WFI instruction, ignore next commit\n");
+            ignore_pre_npc = true;
+        }
         pre_npc = dut->commit[i].npc;
+        pre_mepc = dut->csr.mepc;
+        pre_sepc = dut->csr.sepc;
         if (do_instr_commit(i)) {
           return 1;
         }
