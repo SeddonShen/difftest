@@ -660,21 +660,22 @@ inline void Emulator::single_cycle() {
 //   printf("cycle: %lu\n", cycles);
   if (args.dump_reset_cycles != 0 && cycles == args.dump_reset_cycles) {
     printf("dump reset snapshot at cycle %lu\n", cycles);
-
+#if VM_TRACE == 1
     tfp_stateChange = new VerilatedVcdC;
     dut_ptr->trace(tfp_stateChange, 99);
     tfp_stateChange->open(csr_wave_filename(cycles));
     tfp_stateChange->dump(cycles);
     tfp_stateChange->close();
-
+#endif
     auto dut = difftest[0]->dut;
     auto proxy = difftest[0]->proxy;
     uint64_t dut_this_pc = dut->commit[0].pc;
     dut->commit[0].pc = 0x80000000;
     proxy->regcpy(dut, false);
     dut->commit[0].pc = dut_this_pc;
-
+#if VM_SAVABLE
     snapshot_save(csr_snapshot_filename());
+#endif
   }
 
   dut_ptr->clock = 1;
@@ -756,8 +757,9 @@ inline void Emulator::single_cycle() {
           if(args.footprints_name) {
             dump_footprints();
           }
-
+#if VM_SAVABLE
           snapshot_save(csr_snapshot_filename());
+#endif
       }
     }
   }
